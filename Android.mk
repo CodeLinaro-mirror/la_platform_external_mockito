@@ -26,7 +26,7 @@ LOCAL_SRC_FILES := \
     $(call all-java-files-under, src) \
     $(call all-java-files-under, cglib-and-asm/src)
 
-LOCAL_JAVA_LIBRARIES := junit objenesis-host ant
+LOCAL_JAVA_LIBRARIES := junit-host objenesis-host ant
 LOCAL_MODULE := mockito-host
 LOCAL_MODULE_TAGS := optional
 LOCAL_JAVA_LANGUAGE_VERSION := 1.7
@@ -66,7 +66,7 @@ target_src_files := \
     $(filter-out $(explicit_target_excludes), $(target_src_files))
 
 LOCAL_SRC_FILES := $(target_src_files)
-LOCAL_JAVA_LIBRARIES := junit4-target objenesis-target
+LOCAL_JAVA_LIBRARIES := junit objenesis-target
 LOCAL_MODULE := mockito-api
 LOCAL_SDK_VERSION := 16
 LOCAL_MODULE_TAGS := optional
@@ -77,18 +77,18 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := mockito-target
-LOCAL_STATIC_JAVA_LIBRARIES := mockito-target-minus-junit4 junit4-target
+LOCAL_STATIC_JAVA_LIBRARIES := mockito-target-minus-junit4 junit
 LOCAL_SDK_VERSION := 16
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_STATIC_JAVA_LIBRARY)
 
-# A mockito target that doesn't pull in junit4-target. This is used to work around
-# issues caused by multiple copies of junit4 in the classpath, usually when a test
+# A mockito target that doesn't pull in junit. This is used to work around
+# issues caused by multiple copies of junit in the classpath, usually when a test
 # using mockito is run using android.test.runner.
 include $(CLEAR_VARS)
 LOCAL_MODULE := mockito-target-minus-junit4
 LOCAL_STATIC_JAVA_LIBRARIES := mockito-api dexmaker dexmaker-mockmaker objenesis-target
-LOCAL_JAVA_LIBRARIES := junit4-target
+LOCAL_JAVA_LIBRARIES := junit
 LOCAL_SDK_VERSION := 16
 LOCAL_MODULE_TAGS := optional
 LOCAL_JAVA_LANGUAGE_VERSION := 1.7
@@ -100,13 +100,12 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
 ###################################################################
 
 # Builds the Mockito source code, but does not include any run-time
-# dependencies. Since host modules are not compiled against the SDK,
-# an explicit inclusion of core-junit-hostdex is needed in contrast
-# with the target module above.
+# dependencies.
 ifeq ($(HOST_OS),linux)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(target_src_files)
-LOCAL_JAVA_LIBRARIES := core-junit-hostdex junit4-target-hostdex \
+LOCAL_JAVA_LIBRARIES := \
+    junit-hostdex \
     objenesis-hostdex
 LOCAL_MODULE := mockito-api-hostdex
 LOCAL_MODULE_TAGS := optional
@@ -119,3 +118,5 @@ endif # HOST_OS == linux
 ###################################################
 explicit_target_excludes :=
 target_src_files :=
+
+include $(call all-makefiles-under,$(LOCAL_PATH))
