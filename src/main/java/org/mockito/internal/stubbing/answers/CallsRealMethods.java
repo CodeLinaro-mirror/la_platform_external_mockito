@@ -4,14 +4,15 @@
  */
 package org.mockito.internal.stubbing.answers;
 
+import static org.mockito.Answers.RETURNS_DEFAULTS;
+import static org.mockito.internal.exceptions.Reporter.cannotCallAbstractRealMethod;
+
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.stubbing.ValidableAnswer;
-
-import static org.mockito.Answers.RETURNS_DEFAULTS;
-import static org.mockito.internal.exceptions.Reporter.cannotCallAbstractRealMethod;
 
 /**
  * Optional Answer that adds partial mocking support
@@ -30,12 +31,13 @@ import static org.mockito.internal.exceptions.Reporter.cannotCallAbstractRealMet
  * <p>
  * However, there are rare cases when partial mocks come handy:
  * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
- * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+ * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
  * <p>
  */
 public class CallsRealMethods implements Answer<Object>, ValidableAnswer, Serializable {
     private static final long serialVersionUID = 9057165148930624087L;
 
+    @Override
     public Object answer(InvocationOnMock invocation) throws Throwable {
         if (Modifier.isAbstract(invocation.getMethod().getModifiers())) {
             return RETURNS_DEFAULTS.answer(invocation);

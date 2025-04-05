@@ -44,7 +44,7 @@ package org.mockito;
  * </ul>
  *
  * <p>
- * Implementations of this interface can be used with {@link Matchers#argThat} method.
+ * Implementations of this interface can be used with {@link ArgumentMatchers#argThat} method.
  * Use <code>toString()</code> method for description of the matcher
  * - it is printed in verification errors.
  *
@@ -61,7 +61,7 @@ package org.mockito;
  *
  * List mock = mock(List.class);
  *
- * when(mock.addAll(argThat(new ListOfTwoElements))).thenReturn(true);
+ * when(mock.addAll(argThat(new ListOfTwoElements()))).thenReturn(true);
  *
  * mock.addAll(Arrays.asList(&quot;one&quot;, &quot;two&quot;));
  *
@@ -80,11 +80,11 @@ package org.mockito;
  * and use a lambda, e.g.:
  *
  * <pre class="code"><code class="java">
- *   verify(mock).addAll(<b>argThat(list -> list.size() == 2)</b>);
+ *   verify(mock).addAll(<b>argThat(list -&gt; list.size() == 2)</b>);
  * </code></pre>
  *
  * <p>
- * Read more about other matchers in javadoc for {@link Matchers} class.
+ * Read more about other matchers in javadoc for {@link ArgumentMatchers} class.
  * <h2>2.1.0 migration guide</h2>
  *
  * All existing custom implementations of <code>ArgumentMatcher</code> will no longer compile.

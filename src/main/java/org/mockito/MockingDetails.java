@@ -4,13 +4,13 @@
  */
 package org.mockito;
 
+import java.util.Collection;
+
 import org.mockito.invocation.Invocation;
 import org.mockito.invocation.MockHandler;
 import org.mockito.mock.MockCreationSettings;
 import org.mockito.quality.MockitoHint;
 import org.mockito.stubbing.Stubbing;
-
-import java.util.Collection;
 
 /**
  * Provides mocking information.
@@ -102,8 +102,6 @@ public interface MockingDetails {
      * Don't write code that depends on the output of this method.
      * If you need to know about interactions and stubbings, use {@link #getStubbings()} and {@link #getInvocations()}.
      * <p>
-     * This method was moved from the deprecated and semi-hidden type {@link MockitoDebugger}.
-     * <p>
      * This method throws meaningful exception when object wrapped by MockingDetails is not a mock.
      *
      * @since 2.2.6
@@ -119,7 +117,6 @@ public interface MockingDetails {
      * @return mock handler instance of this mock
      * @since 2.10.0
      */
-    @Incubating
     MockHandler getMockHandler();
 
     /**

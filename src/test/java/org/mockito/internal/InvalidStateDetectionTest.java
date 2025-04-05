@@ -2,8 +2,11 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockito.internal;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 import org.junit.After;
 import org.junit.Test;
@@ -14,10 +17,6 @@ import org.mockito.exceptions.misusing.UnfinishedStubbingException;
 import org.mockito.exceptions.misusing.UnfinishedVerificationException;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
 
 /**
  * invalid state happens if:
@@ -31,12 +30,10 @@ import static org.mockito.Mockito.*;
  *
  *    -on method call on mock
  *    -on verify
- *    -on verifyZeroInteractions
  *    -on verifyNoMoreInteractions
  *    -on verify in order
  *    -on stub
  */
-@SuppressWarnings({"unchecked", "deprecation"})
 public class InvalidStateDetectionTest extends TestBase {
 
     @Mock private IMethods mock;
@@ -62,10 +59,10 @@ public class InvalidStateDetectionTest extends TestBase {
         detectsAndCleansUp(new OnVerifyInOrder(), UnfinishedStubbingException.class);
 
         when(mock.simpleMethod());
-        detectsAndCleansUp(new OnVerifyZeroInteractions(), UnfinishedStubbingException.class);
+        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedStubbingException.class);
 
         when(mock.simpleMethod());
-        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedStubbingException.class);
+        detectsAndCleansUp(new OnVerifyNoInteractions(), UnfinishedStubbingException.class);
 
         when(mock.simpleMethod());
         detectsAndCleansUp(new OnDoAnswer(), UnfinishedStubbingException.class);
@@ -87,10 +84,10 @@ public class InvalidStateDetectionTest extends TestBase {
         detectsAndCleansUp(new OnVerifyInOrder(), UnfinishedStubbingException.class);
 
         doAnswer(null);
-        detectsAndCleansUp(new OnVerifyZeroInteractions(), UnfinishedStubbingException.class);
+        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedStubbingException.class);
 
         doAnswer(null);
-        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedStubbingException.class);
+        detectsAndCleansUp(new OnVerifyNoInteractions(), UnfinishedStubbingException.class);
 
         doAnswer(null);
         detectsAndCleansUp(new OnDoAnswer(), UnfinishedStubbingException.class);
@@ -109,10 +106,10 @@ public class InvalidStateDetectionTest extends TestBase {
         detectsAndCleansUp(new OnVerifyInOrder(), UnfinishedVerificationException.class);
 
         verify(mock);
-        detectsAndCleansUp(new OnVerifyZeroInteractions(), UnfinishedVerificationException.class);
+        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedVerificationException.class);
 
         verify(mock);
-        detectsAndCleansUp(new OnVerifyNoMoreInteractions(), UnfinishedVerificationException.class);
+        detectsAndCleansUp(new OnVerifyNoInteractions(), UnfinishedVerificationException.class);
 
         verify(mock);
         detectsAndCleansUp(new OnDoAnswer(), UnfinishedVerificationException.class);
@@ -120,36 +117,38 @@ public class InvalidStateDetectionTest extends TestBase {
 
     @Test
     public void shouldDetectMisplacedArgumentMatcher() {
-        anyObject();
+        Object ignored = any();
         detectsAndCleansUp(new OnVerify(), InvalidUseOfMatchersException.class);
 
-        anyObject();
+        ignored = any();
         detectsAndCleansUp(new OnVerifyInOrder(), InvalidUseOfMatchersException.class);
 
-        anyObject();
-        detectsAndCleansUp(new OnVerifyZeroInteractions(), InvalidUseOfMatchersException.class);
-
-        anyObject();
+        ignored = any();
         detectsAndCleansUp(new OnVerifyNoMoreInteractions(), InvalidUseOfMatchersException.class);
 
-        anyObject();
+        ignored = any();
+        detectsAndCleansUp(new OnVerifyNoInteractions(), InvalidUseOfMatchersException.class);
+
+        ignored = any();
         detectsAndCleansUp(new OnDoAnswer(), InvalidUseOfMatchersException.class);
     }
 
     @Test
     public void shouldCorrectStateAfterDetectingUnfinishedStubbing() {
-        doThrow(new RuntimeException()).when(mock);
+        Object ignored = doThrow(new RuntimeException()).when(mock);
 
         try {
-        	doThrow(new RuntimeException()).when(mock).oneArg(true);
+            doThrow(new RuntimeException()).when(mock).oneArg(true);
             fail();
-        } catch (UnfinishedStubbingException e) {}
+        } catch (UnfinishedStubbingException e) {
+        }
 
         doThrow(new RuntimeException()).when(mock).oneArg(true);
         try {
             mock.oneArg(true);
             fail();
-        } catch (RuntimeException e) {}
+        } catch (RuntimeException e) {
+        }
     }
 
     @SuppressWarnings({"CheckReturnValue", "MockitoUsage"})
@@ -161,7 +160,8 @@ public class InvalidStateDetectionTest extends TestBase {
         try {
             verify(mock).simpleMethod();
             fail();
-        } catch (UnfinishedVerificationException e) {}
+        } catch (UnfinishedVerificationException e) {
+        }
 
         verify(mock).simpleMethod();
     }
@@ -184,17 +184,17 @@ public class InvalidStateDetectionTest extends TestBase {
         }
     }
 
-    private static class OnVerifyZeroInteractions implements DetectsInvalidState {
-        @SuppressWarnings({"CheckReturnValue", "MockitoUsage"})
-        public void detect(IMethods mock) {
-            verifyZeroInteractions(mock);
-        }
-    }
-
     private static class OnVerifyNoMoreInteractions implements DetectsInvalidState {
         @SuppressWarnings({"CheckReturnValue", "MockitoUsage"})
         public void detect(IMethods mock) {
             verifyNoMoreInteractions(mock);
+        }
+    }
+
+    private static class OnVerifyNoInteractions implements DetectsInvalidState {
+        @SuppressWarnings({"CheckReturnValue", "MockitoUsage"})
+        public void detect(IMethods mock) {
+            verifyNoInteractions(mock);
         }
     }
 
@@ -239,7 +239,7 @@ public class InvalidStateDetectionTest extends TestBase {
         } catch (Exception e) {
             assertEquals(expected, e.getClass());
         }
-        //Make sure state is cleaned up
+        // Make sure state is cleaned up
         new StateMaster().validate();
     }
 }

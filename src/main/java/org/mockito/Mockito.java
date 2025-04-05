@@ -6,10 +6,8 @@ package org.mockito;
 
 import org.mockito.exceptions.misusing.PotentialStubbingProblem;
 import org.mockito.exceptions.misusing.UnnecessaryStubbingException;
-import org.mockito.internal.InternalMockHandler;
 import org.mockito.internal.MockitoCore;
 import org.mockito.internal.creation.MockSettingsImpl;
-import org.mockito.internal.debugging.MockitoDebuggerImpl;
 import org.mockito.internal.framework.DefaultMockitoFramework;
 import org.mockito.internal.session.DefaultMockitoSessionBuilder;
 import org.mockito.internal.verification.VerificationModeFactory;
@@ -18,6 +16,7 @@ import org.mockito.invocation.InvocationFactory;
 import org.mockito.invocation.MockHandler;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner.Strict;
 import org.mockito.junit.MockitoRule;
 import org.mockito.listeners.VerificationStartedEvent;
 import org.mockito.listeners.VerificationStartedListener;
@@ -33,20 +32,17 @@ import org.mockito.stubbing.Answer1;
 import org.mockito.stubbing.LenientStubber;
 import org.mockito.stubbing.OngoingStubbing;
 import org.mockito.stubbing.Stubber;
-import org.mockito.stubbing.Stubbing;
 import org.mockito.stubbing.VoidAnswer1;
-import org.mockito.verification.After;
-import org.mockito.verification.Timeout;
-import org.mockito.verification.VerificationAfterDelay;
-import org.mockito.verification.VerificationMode;
-import org.mockito.verification.VerificationWithTimeout;
+import org.mockito.verification.*;
+
+import java.util.function.Function;
 
 /**
  * <p align="left"><img src="logo.png" srcset="logo@2x.png 2x" alt="Mockito logo"/></p>
  * The Mockito library enables mock creation, verification and stubbing.
  *
  * <p>
- * This javadoc content is also available on the <a href="http://mockito.org">http://mockito.org</a> web page.
+ * This javadoc content is also available on the <a href="https://site.mockito.org/">https://site.mockito.org/</a> web page.
  * All documentation is kept in javadocs because it guarantees consistency between what's on the web and what's in the source code.
  * It allows access to documentation straight from the IDE even if you work offline.
  * It motivates Mockito developers to keep documentation up-to-date with the code that they write,
@@ -56,8 +52,8 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <b>
  *      <a href="#0">0. Migrating to Mockito 2</a><br/>
- *      <a href="#0.1">0.1 Mockito Android support</a></br/>
- *      <a href="#0.2">0.2 Configuration-free inline mock making</a></br/>
+ *      <a href="#0.1">0.1 Mockito Android support</a><br/>
+ *      <a href="#0.2">0.2 Configuration-free inline mock making</a><br/>
  *      <a href="#1">1. Let's verify some behaviour! </a><br/>
  *      <a href="#2">2. How about some stubbing? </a><br/>
  *      <a href="#3">3. Argument matchers </a><br/>
@@ -75,7 +71,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *      <a href="#15">15. Capturing arguments for further assertions (Since 1.8.0) </a><br/>
  *      <a href="#16">16. Real partial mocks (Since 1.8.0) </a><br/>
  *      <a href="#17">17. Resetting mocks (Since 1.8.0) </a><br/>
- *      <a href="#18">18. Troubleshooting & validating framework usage (Since 1.8.0) </a><br/>
+ *      <a href="#18">18. Troubleshooting and validating framework usage (Since 1.8.0) </a><br/>
  *      <a href="#19">19. Aliases for behavior driven development (Since 1.8.0) </a><br/>
  *      <a href="#20">20. Serializable mocks (Since 1.8.1) </a><br/>
  *      <a href="#21">21. New annotations: <code>&#064;Captor</code>, <code>&#064;Spy</code>, <code>&#064;InjectMocks</code> (Since 1.8.3) </a><br/>
@@ -105,12 +101,16 @@ import org.mockito.verification.VerificationWithTimeout;
  *      <a href="#45">45. New JUnit Jupiter (JUnit5+) extension</a><br/>
  *      <a href="#46">46. New <code>Mockito.lenient()</code> and <code>MockSettings.lenient()</code> methods (Since 2.20.0)</a><br/>
  *      <a href="#47">47. New API for clearing mock state in inline mocking (Since 2.25.0)</a><br/>
+ *      <a href="#48">48. New API for mocking static methods (Since 3.4.0)</a><br/>
+ *      <a href="#49">49. New API for mocking object construction (Since 3.5.0)</a><br/>
+ *      <a href="#50">50. Avoiding code generation when restricting mocks to interfaces (Since 3.12.2)</a><br/>
+ *      <a href="#51">51. New API for marking classes as unmockable (Since 4.1.0)</a><br/>
  * </b>
  *
  * <h3 id="0">0. <a class="meaningful_link" href="#mockito2" name="mockito2">Migrating to Mockito 2</a></h3>
  *
  * In order to continue improving Mockito and further improve the unit testing experience, we want you to upgrade to 2.1.0!
- * Mockito follows <a href="http://semver.org/">semantic versioning</a> and contains breaking changes only on major version upgrades.
+ * Mockito follows <a href="https://semver.org/">semantic versioning</a> and contains breaking changes only on major version upgrades.
  * In the lifecycle of a library, breaking changes are necessary
  * to roll out a set of brand new features that alter the existing behavior or even change the API.
  * For a comprehensive guide on the new release including incompatible changes,
@@ -124,7 +124,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <pre class="code"><code>
  * repositories {
- *   jcenter()
+ *   mavenCentral()
  * }
  * dependencies {
  *   testCompile "org.mockito:mockito-core:+"
@@ -146,7 +146,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <pre class="code"><code>
  * repositories {
- *   jcenter()
+ *   mavenCentral()
  * }
  * dependencies {
  *   testCompile "org.mockito:mockito-inline:+"
@@ -208,7 +208,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * //Although it is possible to verify a stubbed invocation, usually <b>it's just redundant</b>
  * //If your code cares what get(0) returns, then something else breaks (often even before verify() gets executed).
- * //If your code doesn't care what get(0) returns, then it should not be stubbed. Not convinced? See <a href="http://monkeyisland.pl/2008/04/26/asking-and-telling">here</a>.
+ * //If your code doesn't care what get(0) returns, then it should not be stubbed.
  * verify(mockedList).get(0);
  * </code></pre>
  *
@@ -243,7 +243,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * when(mockedList.get(anyInt())).thenReturn("element");
  *
  * //stubbing using custom matcher (let's say isValid() returns your own matcher implementation):
- * when(mockedList.contains(argThat(isValid()))).thenReturn("element");
+ * when(mockedList.contains(argThat(isValid()))).thenReturn(true);
  *
  * //following prints "element"
  * System.out.println(mockedList.get(999));
@@ -252,7 +252,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * verify(mockedList).get(anyInt());
  *
  * //<b>argument matchers can also be written as Java 8 Lambdas</b>
- * verify(mockedList).add(argThat(someString -> someString.length() > 5));
+ * verify(mockedList).add(argThat(someString -&gt; someString.length() &gt; 5));
  *
  * </code></pre>
  *
@@ -264,7 +264,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * For information solely on <b>custom argument matchers</b> check out javadoc for {@link ArgumentMatcher} class.
  * <p>
  * Be reasonable with using complicated argument matching.
- * The natural matching style using <code>equals()</code> with occasional <code>anyX()</code> matchers tend to give clean & simple tests.
+ * The natural matching style using <code>equals()</code> with occasional <code>anyX()</code> matchers tend to give clean and simple tests.
  * Sometimes it's just better to refactor the code to allow <code>equals()</code> matching or even implement <code>equals()</code> method to help out with testing.
  * <p>
  * Also, read <a href="#15">section 15</a> or javadoc for {@link ArgumentCaptor} class.
@@ -275,7 +275,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * If you are using argument matchers, <b>all arguments</b> have to be provided
  * by matchers.
  * <p>
- The following example shows verification but the same applies to stubbing:
+ * The following example shows verification but the same applies to stubbing:
  *
  * <pre class="code"><code class="java">
  *   verify(mock).someMethod(anyInt(), anyString(), <b>eq("third argument")</b>);
@@ -286,10 +286,10 @@ import org.mockito.verification.VerificationWithTimeout;
  * </code></pre>
  *
  * <p>
- * Matcher methods like <code>anyObject()</code>, <code>eq()</code> <b>do not</b> return matchers.
+ * Matcher methods like <code>any()</code>, <code>eq()</code> <b>do not</b> return matchers.
  * Internally, they record a matcher on a stack and return a dummy value (usually null).
  * This implementation is due to static type safety imposed by the java compiler.
- * The consequence is that you cannot use <code>anyObject()</code>, <code>eq()</code> methods outside of verified/stubbed method.
+ * The consequence is that you cannot use <code>any()</code>, <code>eq()</code> methods outside of verified/stubbed method.
  *
  *
  *
@@ -320,6 +320,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * verify(mockedList, never()).add("never happened");
  *
  * //verification using atLeast()/atMost()
+ * verify(mockedList, atMostOnce()).add("once");
  * verify(mockedList, atLeastOnce()).add("three times");
  * verify(mockedList, atLeast(2)).add("three times");
  * verify(mockedList, atMost(5)).add("three times");
@@ -358,7 +359,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * //create an inOrder verifier for a single mock
  * InOrder inOrder = inOrder(singleMock);
  *
- * //following will make sure that add is first called with "was added first, then with "was added second"
+ * //following will make sure that add is first called with "was added first", then with "was added second"
  * inOrder.verify(singleMock).add("was added first");
  * inOrder.verify(singleMock).add("was added second");
  *
@@ -402,9 +403,6 @@ import org.mockito.verification.VerificationWithTimeout;
  * //verify that method was never called on a mock
  * verify(mockOne, never()).add("two");
  *
- * //verify that other mocks were not interacted
- * verifyZeroInteractions(mockTwo, mockThree);
- *
  * </code></pre>
  *
  *
@@ -427,8 +425,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Some users who did a lot of classic, expect-run-verify mocking tend to use <code>verifyNoMoreInteractions()</code> very often, even in every test method.
  * <code>verifyNoMoreInteractions()</code> is not recommended to use in every test method.
  * <code>verifyNoMoreInteractions()</code> is a handy assertion from the interaction testing toolkit. Use it only when it's relevant.
- * Abusing it leads to <strong>overspecified</strong>, <strong>less maintainable</strong> tests. You can find further reading
- * <a href="http://monkeyisland.pl/2008/07/12/should-i-worry-about-the-unexpected/">here</a>.
+ * Abusing it leads to <strong>overspecified</strong>, <strong>less maintainable</strong> tests.
  *
  * <p>
  * See also {@link Mockito#never()} - it is more explicit and
@@ -455,16 +452,20 @@ import org.mockito.verification.VerificationWithTimeout;
  *       &#064;Mock private UserProvider userProvider;
  *
  *       private ArticleManager manager;
+ *
+ *       &#064;org.junit.jupiter.api.Test
+ *       void testSomethingInJunit5(&#064;Mock ArticleDatabase database) {
  * </code></pre>
  *
  * <b>Important!</b> This needs to be somewhere in the base class or a test
  * runner:
  *
  * <pre class="code"><code class="java">
- * MockitoAnnotations.initMocks(testClass);
+ * MockitoAnnotations.openMocks(testClass);
  * </code></pre>
  *
  * You can use built-in runner: {@link MockitoJUnitRunner} or a rule: {@link MockitoRule}.
+ * For JUnit5 tests, refer to the JUnit5 extension described in <a href="#45">section 45</a>.
  * <p>
  * Read more here: {@link MockitoAnnotations}
  *
@@ -524,7 +525,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Yet another controversial feature which was not included in Mockito
  * originally. We recommend simply stubbing with <code>thenReturn()</code> or
  * <code>thenThrow()</code>, which should be enough to test/test-drive
- * any clean & simple code. However, if you do have a need to stub with the generic Answer interface, here is an example:
+ * any clean and simple code. However, if you do have a need to stub with the generic Answer interface, here is an example:
  *
  * <pre class="code"><code class="java">
  * when(mock.someMethod(anyString())).thenAnswer(
@@ -598,8 +599,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * <b>Before the release 1.8</b>, Mockito spies were not real partial mocks.
  * The reason was we thought partial mock is a code smell.
  * At some point we found legitimate use cases for partial mocks
- * (3rd party interfaces, interim refactoring of legacy code, the full article is
- * <a href="http://monkeyisland.pl/2009/01/13/subclass-and-override-vs-partial-mocking-vs-refactoring">here</a>)
+ * (3rd party interfaces, interim refactoring of legacy code).
  * <p>
  *
  * <pre class="code"><code class="java">
@@ -680,7 +680,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * <h3 id="15">15. <a class="meaningful_link" href="#captors" name="captors">Capturing arguments</a> for further assertions (Since 1.8.0)</h3>
  *
  * Mockito verifies argument values in natural java style: by using an <code>equals()</code> method.
- * This is also the recommended way of matching arguments because it makes tests clean & simple.
+ * This is also the recommended way of matching arguments because it makes tests clean and simple.
  * In some situations though, it is helpful to assert on certain arguments after the actual verification.
  * For example:
  * <pre class="code"><code class="java">
@@ -694,7 +694,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Also it may reduce defect localization because if stubbed method was not called then no argument is captured.
  * <p>
  * In a way ArgumentCaptor is related to custom argument matchers (see javadoc for {@link ArgumentMatcher} class).
- * Both techniques can be used for making sure certain arguments where passed to mocks.
+ * Both techniques can be used for making sure certain arguments were passed to mocks.
  * However, ArgumentCaptor may be a better fit if:
  * <ul>
  * <li>custom argument matcher is not likely to be reused</li>
@@ -707,9 +707,8 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <h3 id="16">16. <a class="meaningful_link" href="#partial_mocks" name="partial_mocks">Real partial mocks</a> (Since 1.8.0)</h3>
  *
- *  Finally, after many internal debates & discussions on the mailing list, partial mock support was added to Mockito.
- *  Previously we considered partial mocks as code smells. However, we found a legitimate use case for partial mocks - more reading:
- *  <a href="http://monkeyisland.pl/2009/01/13/subclass-and-override-vs-partial-mocking-vs-refactoring">here</a>
+ *  Finally, after many internal debates and discussions on the mailing list, partial mock support was added to Mockito.
+ *  Previously we considered partial mocks as code smells. However, we found a legitimate use case for partial mocks.
  *  <p>
  *  <b>Before release 1.8</b> <code>spy()</code> was not producing real partial mocks and it was confusing for some users.
  *  Read more about spying: <a href="#13">here</a> or in javadoc for {@link Mockito#spy(Object)} method.
@@ -733,7 +732,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * <p>
  * However, there are rare cases when partial mocks come handy:
  * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
- * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+ * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
  *
  *
  *
@@ -745,7 +744,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * <p>
  * Instead of <code>reset()</code> please consider writing simple, small and focused test methods over lengthy, over-specified tests.
  * <b>First potential code smell is <code>reset()</code> in the middle of the test method.</b> This probably means you're testing too much.
- * Follow the whisper of your test methods: "Please keep us small & focused on single behavior".
+ * Follow the whisper of your test methods: "Please keep us small and focused on single behavior".
  * There are several threads about it on mockito mailing list.
  * <p>
  * The only reason we added <code>reset()</code> method is to
@@ -759,19 +758,19 @@ import org.mockito.verification.VerificationWithTimeout;
  *   mock.add(1);
  *
  *   reset(mock);
- *   //at this point the mock forgot any interactions & stubbing
+ *   //at this point the mock forgot any interactions and stubbing
  * </code></pre>
  *
  *
  *
  *
- * <h3 id="18">18. <a class="meaningful_link" href="#framework_validation" name="framework_validation">Troubleshooting & validating framework usage</a> (Since 1.8.0)</h3>
+ * <h3 id="18">18. <a class="meaningful_link" href="#framework_validation" name="framework_validation">Troubleshooting and validating framework usage</a> (Since 1.8.0)</h3>
  *
  * First of all, in case of any trouble, I encourage you to read the Mockito FAQ:
  * <a href="https://github.com/mockito/mockito/wiki/FAQ">https://github.com/mockito/mockito/wiki/FAQ</a>
  * <p>
  * In case of questions you may also post to mockito mailing list:
- * <a href="http://groups.google.com/group/mockito">http://groups.google.com/group/mockito</a>
+ * <a href="https://groups.google.com/group/mockito">https://groups.google.com/group/mockito</a>
  * <p>
  * Next, you should know that Mockito validates if you use it correctly <b>all the time</b>.
  * However, there's a gotcha so please read the javadoc for {@link Mockito#validateMockitoUsage()}
@@ -784,7 +783,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Behavior Driven Development style of writing tests uses <b>//given //when //then</b> comments as fundamental parts of your test methods.
  * This is exactly how we write our tests and we warmly encourage you to do so!
  * <p>
- * Start learning about BDD here: <a href="http://en.wikipedia.org/wiki/Behavior_Driven_Development">http://en.wikipedia.org/wiki/Behavior_Driven_Development</a>
+ * Start learning about BDD here: <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">https://en.wikipedia.org/wiki/Behavior-driven_development</a>
  * <p>
  * The problem is that current stubbing api with canonical role of <b>when</b> word does not integrate nicely with <b>//given //when //then</b> comments.
  * It's because stubbing belongs to <b>given</b> component of the test and not to the <b>when</b> component of the test.
@@ -827,7 +826,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *   List serializableMock = mock(List.class, withSettings().serializable());
  * </code></pre>
  * <p>
- * The mock can be serialized assuming all the normal <a href='http://java.sun.com/j2se/1.5.0/docs/api/java/io/Serializable.html'>
+ * The mock can be serialized assuming all the normal <a href='https://docs.oracle.com/javase/8/docs/api/java/io/Serializable.html'>
  * serialization requirements</a> are met by the class.
  * <p>
  * Making a real object spy serializable is a bit more effort as the spy(...) method does not have an overloaded version
@@ -864,7 +863,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * should only use partial mocks as a last resort. See point 16 about partial mocks.
  *
  * <p>
- * All new annotations are <b>*only*</b> processed on {@link MockitoAnnotations#initMocks(Object)}.
+ * All new annotations are <b>*only*</b> processed on {@link MockitoAnnotations#openMocks(Object)}.
  * Just like for &#064;{@link Mock} annotation you can use the built-in runner: {@link MockitoJUnitRunner} or rule:
  * {@link MockitoRule}.
  * <p>
@@ -908,7 +907,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Mockito will now try to instantiate &#064;{@link Spy} and will instantiate &#064;{@link InjectMocks} fields
  * using <b>constructor</b> injection, <b>setter</b> injection, or <b>field</b> injection.
  * <p>
- * To take advantage of this feature you need to use {@link MockitoAnnotations#initMocks(Object)}, {@link MockitoJUnitRunner}
+ * To take advantage of this feature you need to use {@link MockitoAnnotations#openMocks(Object)}, {@link MockitoJUnitRunner}
  * or {@link MockitoRule}.
  * <p>
  * Read more about available tricks and the rules of injection in the javadoc for {@link InjectMocks}
@@ -930,7 +929,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * Mockito will now allow you to create mocks when stubbing.
  * Basically, it allows to create a stub in one line of code.
  * This can be helpful to keep test code clean.
- * For example, some boring stub can be created & stubbed at field initialization in a test:
+ * For example, some boring stub can be created and stubbed at field initialization in a test:
  * <pre class="code"><code class="java">
  * public class CarTest {
  *   Car boringStubbedCar = when(mock(Car.class).shiftGear()).thenThrow(EngineNotStarted.class).getMock();
@@ -1077,7 +1076,7 @@ import org.mockito.verification.VerificationWithTimeout;
  * SomeAbstract spy = spy(SomeAbstract.class);
  *
  * //Mocking abstract methods, spying default methods of an interface (only available since 2.7.13)
- * Function<Foo, Bar> function = spy(Function.class);
+ * Function&lt;Foo, Bar&gt; function = spy(Function.class);
  *
  * //Robust API, via settings builder:
  * OtherAbstract spy = mock(OtherAbstract.class, withSettings()
@@ -1101,7 +1100,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * Mockito introduces serialization across classloader.
  *
- * Like with any other form of serialization, all types in the mock hierarchy have to serializable, inclusing answers.
+ * Like with any other form of serialization, all types in the mock hierarchy have to serializable, including answers.
  * As this serialization mode require considerably more work, this is an opt-in setting.
  *
  * <pre class="code"><code class="java">
@@ -1145,7 +1144,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <ul>
  *     <li>Annotating the JUnit test class with a <code>&#064;{@link org.junit.runner.RunWith}({@link MockitoJUnitRunner}.class)</code></li>
- *     <li>Invoking <code>{@link MockitoAnnotations#initMocks(Object)}</code> in the <code>&#064;{@link org.junit.Before}</code> method</li>
+ *     <li>Invoking <code>{@link MockitoAnnotations#openMocks(Object)}</code> in the <code>&#064;{@link org.junit.Before}</code> method</li>
  * </ul>
  *
  * Now you can choose to use a rule :
@@ -1201,21 +1200,21 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * // verify a list only had strings of a certain length added to it
  * // note - this will only compile under Java 8
- * verify(list, times(2)).add(argThat(string -> string.length() < 5));
+ * verify(list, times(2)).add(argThat(string -&gt; string.length() &lt; 5));
  *
  * // Java 7 equivalent - not as neat
- * verify(list, times(2)).add(argThat(new ArgumentMatcher<String>(){
+ * verify(list, times(2)).add(argThat(new ArgumentMatcher&lt;String&gt;(){
  *     public boolean matches(String arg) {
- *         return arg.length() < 5;
+ *         return arg.length() &lt; 5;
  *     }
  * }));
  *
  * // more complex Java 8 example - where you can specify complex verification behaviour functionally
- * verify(target, times(1)).receiveComplexObject(argThat(obj -> obj.getSubObject().get(0).equals("expected")));
+ * verify(target, times(1)).receiveComplexObject(argThat(obj -&gt; obj.getSubObject().get(0).equals("expected")));
  *
  * // this can also be used when defining the behaviour of a mock under different inputs
  * // in this case if the input list was fewer than 3 items the mock returns null
- * when(mock.someMethod(argThat(list -> list.size()<3))).thenReturn(null);
+ * when(mock.someMethod(argThat(list -&gt; list.size()&lt;3))).thenReturn(null);
  * </code></pre>
  *
  * <h3 id="37">37. <a class="meaningful_link" href="#Java_8_Custom_Answers" name="Java_8_Custom_Answers">Java 8 Custom Answer Support</a> (Since 2.1.0)</h3>
@@ -1229,12 +1228,12 @@ import org.mockito.verification.VerificationWithTimeout;
  * <p>
  * <pre class="code"><code class="java">
  * // answer by returning 12 every time
- * doAnswer(invocation -> 12).when(mock).doSomething();
+ * doAnswer(invocation -&gt; 12).when(mock).doSomething();
  *
  * // answer by using one of the parameters - converting into the right
  * // type as your go - in this case, returning the length of the second string parameter
  * // as the answer. This gets long-winded quickly, with casting of parameters.
- * doAnswer(invocation -> ((String)invocation.getArgument(1)).length())
+ * doAnswer(invocation -&gt; ((String)invocation.getArgument(1)).length())
  *     .when(mock).doSomething(anyString(), anyString(), anyString());
  * </code></pre>
  *
@@ -1242,8 +1241,8 @@ import org.mockito.verification.VerificationWithTimeout;
  * as Java 8 lambdas. Even in Java 7 and lower these custom answers based on a typed interface can reduce boilerplate.
  * In particular, this approach will make it easier to test functions which use callbacks.
  *
- * The methods {@link AdditionalAnswers#answer(Answer1) answer} and {@link AdditionalAnswers#answerVoid(VoidAnswer1) answerVoid}
- * can be used to create the answer. They rely on the related answer interfaces in {@link org.mockito.stubbing} that
+ * The methods {@link AdditionalAnswers#answer(Answer1)}} and {@link AdditionalAnswers#answerVoid(VoidAnswer1)}
+ * can be used to create the answer. They rely on the related answer interfaces in org.mockito.stubbing that
  * support answers up to 5 parameters.
  *
  * <p>
@@ -1259,11 +1258,11 @@ import org.mockito.verification.VerificationWithTimeout;
  * void receive(String item);
  *
  * // Java 8 - style 1
- * doAnswer(AdditionalAnswers.<String,Callback>answerVoid((operand, callback) -> callback.receive("dummy"))
+ * doAnswer(AdditionalAnswers.&lt;String,Callback&gt;answerVoid((operand, callback) -&gt; callback.receive("dummy"))
  *     .when(mock).execute(anyString(), any(Callback.class));
  *
  * // Java 8 - style 2 - assuming static import of AdditionalAnswers
- * doAnswer(answerVoid((String operand, Callback callback) -> callback.receive("dummy"))
+ * doAnswer(answerVoid((String operand, Callback callback) -&gt; callback.receive("dummy"))
  *     .when(mock).execute(anyString(), any(Callback.class));
  *
  * // Java 8 - style 3 - where mocking function to is a static member of test class
@@ -1275,7 +1274,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *     .when(mock).execute(anyString(), any(Callback.class));
  *
  * // Java 7
- * doAnswer(answerVoid(new VoidAnswer2<String, Callback>() {
+ * doAnswer(answerVoid(new VoidAnswer2&lt;String, Callback&gt;() {
  *     public void answer(String operation, Callback callback) {
  *         callback.receive("dummy");
  *     }})).when(mock).execute(anyString(), any(Callback.class));
@@ -1287,11 +1286,11 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * // this could be mocked
  * // Java 8
- * doAnswer(AdditionalAnswers.<Boolean,String,String>answer((input1, input2) -> input1.equals(input2))))
+ * doAnswer(AdditionalAnswers.&lt;Boolean,String,String&gt;answer((input1, input2) -&gt; input1.equals(input2))))
  *     .when(mock).execute(anyString(), anyString());
  *
  * // Java 7
- * doAnswer(answer(new Answer2<String, String, String>() {
+ * doAnswer(answer(new Answer2&lt;String, String, String&gt;() {
  *     public String answer(String input1, String input2) {
  *         return input1 + input2;
  *     }})).when(mock).execute(anyString(), anyString());
@@ -1361,7 +1360,7 @@ import org.mockito.verification.VerificationWithTimeout;
  *     </li>
  *     <li>This mock maker has been designed around Java Agent runtime attachment ; this require a compatible JVM,
  *     that is part of the JDK (or Java 9 VM). When running on a non-JDK VM prior to Java 9, it is however possible to
- *     manually add the <a href="http://bytebuddy.net">Byte Buddy Java agent jar</a> using the <code>-javaagent</code>
+ *     manually add the <a href="https://bytebuddy.net">Byte Buddy Java agent jar</a> using the <code>-javaagent</code>
  *     parameter upon starting the JVM.
  *     </li>
  * </ul>
@@ -1375,9 +1374,11 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * To quickly find out how "stricter" Mockito can make you more productive and get your tests cleaner, see:
  * <ul>
- *     <li>Strict stubbing with JUnit Rules - {@link MockitoRule#strictness(Strictness)} with {@link Strictness#STRICT_STUBS}</li>
- *     <li>Strict stubbing with JUnit Runner - {@link MockitoJUnitRunner.StrictStubs}</li>
- *     <li>Strict stubbing if you cannot use runner/rule (like TestNG) - {@link MockitoSession}</li>
+ *     <li>Strict stubbing with JUnit4 Rules - {@link MockitoRule#strictness(Strictness)} with {@link Strictness#STRICT_STUBS}</li>
+ *     <li>Strict stubbing with JUnit4 Runner - {@link Strict MockitoJUnitRunner.Strict}</li>
+ *     <li>Strict stubbing with JUnit5 Extension - <code>org.mockito.junit.jupiter.MockitoExtension</code></li>
+ *     <li>Strict stubbing with TestNG Listener <a href="https://github.com/mockito/mockito-testng">MockitoTestNGListener</a></li>
+ *     <li>Strict stubbing if you cannot use runner/rule - {@link MockitoSession}</li>
  *     <li>Unnecessary stubbing detection with {@link MockitoJUnitRunner}</li>
  *     <li>Stubbing argument mismatch warnings, documented in {@link MockitoHint}</li>
  * </ul>
@@ -1434,15 +1435,10 @@ import org.mockito.verification.VerificationWithTimeout;
  *      Provides access to invocation container object which has no methods (marker interface).
  *      Container is needed to hide the internal implementation and avoid leaking it to the public API.
  *     </li>
- *     <li>Changed {@link Stubbing} -
+ *     <li>Changed {@link org.mockito.stubbing.Stubbing} -
  *      it now extends {@link Answer} interface.
  *      It is backwards compatible because Stubbing interface is not extensible (see {@link NotExtensible}).
  *      The change should be seamless to our users.
- *     </li>
- *     <li>Deprecated {@link InternalMockHandler} -
- *       In order to accommodate API changes we needed to deprecate this interface.
- *       The interface was always documented as internal, we don't have evidence it was used by the community.
- *       The deprecation should be completely seamless for our users.
  *     </li>
  *     <li>{@link NotExtensible} -
  *       Public annotation that indicates to the user that she should not provide custom implementations of given type.
@@ -1501,16 +1497,16 @@ import org.mockito.verification.VerificationWithTimeout;
  *
  * <h3 id="44">44. <a class="meaningful_link" href="#mockito_instantiator_provider_deprecation" name="mockito_instantiator_provider_deprecation">
  *       Deprecated <code>org.mockito.plugins.InstantiatorProvider</code> as it was leaking internal API. it was
- *       replaced by <code>org.mockito.plugins.InstantiatorProvider2 (Since 2.15.4)</a></h3>
+ *       replaced by <code>org.mockito.plugins.InstantiatorProvider2 (Since 2.15.4)</code></a></h3>
  *
- * <p>{@link org.mockito.plugins.InstantiatorProvider} returned an internal API. Hence it was deprecated and replaced
- * by {@link org.mockito.plugins.InstantiatorProvider2}. Old {@link org.mockito.plugins.InstantiatorProvider
- * instantiator providers} will continue to work, but it is recommended to switch to the new API.</p>
+ * <p>org.mockito.plugins.InstantiatorProvider returned an internal API. Hence it was deprecated and replaced
+ * by {@link org.mockito.plugins.InstantiatorProvider2}. org.mockito.plugins.InstantiatorProvider
+ * has now been removed.</p>
  *
  * <h3 id="45">45. <a class="meaningful_link" href="#junit5_mockito" name="junit5_mockito">New JUnit Jupiter (JUnit5+) extension</a></h3>
  *
  * For integration with JUnit Jupiter (JUnit5+), use the `org.mockito:mockito-junit-jupiter` artifact.
- * For more information about the usage of the integration, see <a href="http://javadoc.io/page/org.mockito/mockito-junit-jupiter/latest/org/mockito/junit/jupiter/MockitoExtension.html">the JavaDoc of <code>MockitoExtension</code></a>.
+ * For more information about the usage of the integration, see <a href="https://javadoc.io/doc/org.mockito/mockito-junit-jupiter/latest/org/mockito/junit/jupiter/MockitoExtension.html">the JavaDoc of <code>MockitoExtension</code></a>.
  *
  * <h3 id="46">46. <a class="meaningful_link" href="#mockito_lenient" name="mockito_lenient">
  *       New <code>Mockito.lenient()</code> and <code>MockSettings.lenient()</code> methods (Since 2.20.0)</a></h3>
@@ -1542,7 +1538,76 @@ import org.mockito.verification.VerificationWithTimeout;
  * Hence, we introduced a new API to explicitly clear mock state (only make sense in inline mocking!).
  * See example usage in {@link MockitoFramework#clearInlineMocks()}.
  * If you have feedback or a better idea how to solve the problem please reach out.
+ *
+ *
+ * <h3 id="48">48. <a class="meaningful_link" href="#static_mocks" name="static_mocks">Mocking static methods</a> (since 3.4.0)</h3>
+ *
+ * When using the <a href="#0.2">inline mock maker</a>, it is possible to mock static method invocations within the current
+ * thread and a user-defined scope. This way, Mockito assures that concurrently and sequentially running tests do not interfere.
+ *
+ * To make sure a static mock remains temporary, it is recommended to define the scope within a try-with-resources construct.
+ * In the following example, the <code>Foo</code> type's static method would return <code>foo</code> unless mocked:
+ *
+ * <pre class="code"><code class="java">
+ * assertEquals("foo", Foo.method());
+ * try (MockedStatic<Foo> mocked = mockStatic(Foo.class)) {
+ * mocked.when(Foo::method).thenReturn("bar");
+ * assertEquals("bar", Foo.method());
+ * mocked.verify(Foo::method);
+ * }
+ * assertEquals("foo", Foo.method());
+ * </code></pre>
+ *
+ * Due to the defined scope of the static mock, it returns to its original behavior once the scope is released. To define mock
+ * behavior and to verify static method invocations, use the <code>MockedStatic</code> that is returned.
+ * <p>
+ *
+ * <h3 id="49">49. <a class="meaningful_link" href="#mocked_construction" name="mocked_construction">Mocking object construction</a> (since 3.5.0)</h3>
+ *
+ * When using the <a href="#0.2">inline mock maker</a>, it is possible to generate mocks on constructor invocations within the current
+ * thread and a user-defined scope. This way, Mockito assures that concurrently and sequentially running tests do not interfere.
+ *
+ * To make sure a constructor mocks remain temporary, it is recommended to define the scope within a try-with-resources construct.
+ * In the following example, the <code>Foo</code> type's construction would generate a mock:
+ *
+ * <pre class="code"><code class="java">
+ * assertEquals("foo", new Foo().method());
+ * try (MockedConstruction<Foo> mocked = mockConstruction(Foo.class)) {
+ * Foo foo = new Foo();
+ * when(foo.method()).thenReturn("bar");
+ * assertEquals("bar", foo.method());
+ * verify(foo).method();
+ * }
+ * assertEquals("foo", new Foo().method());
+ * </code></pre>
+ *
+ * Due to the defined scope of the mocked construction, object construction returns to its original behavior once the scope is
+ * released. To define mock behavior and to verify method invocations, use the <code>MockedConstruction</code> that is returned.
+ * <p>
+ *
+ * <h3 id="50">50. <a class="meaningful_link" href="#proxy_mock_maker" name="mocked_construction">Avoiding code generation when only interfaces are mocked</a> (since 3.12.2)</h3>
+ *
+ * The JVM offers the {@link java.lang.reflect.Proxy} facility for creating dynamic proxies of interface types. For most applications, Mockito
+ * must be capable of mocking classes as supported by the default mock maker, or even final classes, as supported by the inline mock maker. To
+ * create such mocks, Mockito requires to setup diverse JVM facilities and must apply code generation. If only interfaces are supposed to be
+ * mocked, one can however choose to use a org.mockito.internal.creation.proxy.ProxyMockMaker that is based on the {@link java.lang.reflect.Proxy}
+ * API which avoids diverse overhead of the other mock makers but also limits mocking to interfaces.
+ *
+ * This mock maker can be activated explicitly by the mockito extension mechanism, just create in the classpath a file
+ * <code>/mockito-extensions/org.mockito.plugins.MockMaker</code> containing the value <code>mock-maker-proxy</code>.
+ *
+ * <h3 id="51">51. <a class="meaningful_link" href="#do_not_mock" name="do_not_mock">Mark classes as unmockable</a> (since 4.1.0)</h3>
+ *
+ * In some cases, mocking a class/interface can lead to unexpected runtime behavior. For example, mocking a <code>java.util.List</code>
+ * is difficult, given the requirements imposed by the interface. This means that on runtime, depending on what methods the application
+ * calls on the list, your mock might behave in such a way that it violates the interface.
+ *
+ * <p>
+ * For any class/interface you own that is problematic to mock, you can now mark the class with {@link org.mockito.DoNotMock @DoNotMock}. For usage
+ * of the annotation and how to ship your own (to avoid a compile time dependency on a test artifact), please see its JavaDoc.
+ * <p>
  */
+@CheckReturnValue
 @SuppressWarnings("unchecked")
 public class Mockito extends ArgumentMatchers {
 
@@ -1572,8 +1637,6 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * <code>ReturnsSmartNulls</code> first tries to return ordinary values (zeros, empty collections, empty string, etc.)
      * then it tries to return SmartNull. If the return type is final then plain <code>null</code> is returned.
-     * <p>
-     * <code>ReturnsSmartNulls</code> will be probably the default return values strategy in Mockito 3.0.0
      * <p>
      * Example:
      * <pre class="code"><code class="java">
@@ -1694,6 +1757,7 @@ public class Mockito extends ArgumentMatchers {
 
     /**
      * Optional <code>Answer</code> to be used with {@link Mockito#mock(Class, Answer)}
+     *
      * <p>
      * {@link Answer} can be used to define the return values of unstubbed invocations.
      * <p>
@@ -1709,7 +1773,7 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * However, there are rare cases when partial mocks come handy:
      * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
-     * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+     * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
      * <p>
      * Example:
      * <pre class="code"><code class="java">
@@ -1725,8 +1789,11 @@ public class Mockito extends ArgumentMatchers {
      * </code></pre>
      *
      * <p>
-     * <u>Note:</u> Stubbing partial mocks using <code>when(mock.getSomething()).thenReturn(fakeValue)</code>
+     * <u>Note 1:</u> Stubbing partial mocks using <code>when(mock.getSomething()).thenReturn(fakeValue)</code>
      * syntax will call the real method. For partial mock it's recommended to use <code>doReturn</code> syntax.
+     * <p>
+     * <u>Note 2:</u> If the mock is serialized then deserialized, then this answer will not be able to understand
+     * generics metadata.
      */
     public static final Answer<Object> CALLS_REAL_METHODS = Answers.CALLS_REAL_METHODS;
 
@@ -1809,7 +1876,6 @@ public class Mockito extends ArgumentMatchers {
      * @param classToMock class or interface to mock
      * @return mock object
      */
-    @CheckReturnValue
     public static <T> T mock(Class<T> classToMock) {
         return mock(classToMock, withSettings());
     }
@@ -1829,11 +1895,8 @@ public class Mockito extends ArgumentMatchers {
      * @param name of the mock
      * @return mock object
      */
-    @CheckReturnValue
     public static <T> T mock(Class<T> classToMock, String name) {
-        return mock(classToMock, withSettings()
-                .name(name)
-                .defaultAnswer(RETURNS_DEFAULTS));
+        return mock(classToMock, withSettings().name(name).defaultAnswer(RETURNS_DEFAULTS));
     }
 
     /**
@@ -1848,7 +1911,6 @@ public class Mockito extends ArgumentMatchers {
      * @return A {@link org.mockito.MockingDetails} instance.
      * @since 1.9.5
      */
-    @CheckReturnValue
     public static MockingDetails mockingDetails(Object toInspect) {
         return MOCKITO_CORE.mockingDetails(toInspect);
     }
@@ -1872,7 +1934,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return mock object
      */
-    @CheckReturnValue
     public static <T> T mock(Class<T> classToMock, Answer defaultAnswer) {
         return mock(classToMock, withSettings().defaultAnswer(defaultAnswer));
     }
@@ -1900,7 +1961,6 @@ public class Mockito extends ArgumentMatchers {
      * @param mockSettings additional mock settings
      * @return mock object
      */
-    @CheckReturnValue
     public static <T> T mock(Class<T> classToMock, MockSettings mockSettings) {
         return MOCKITO_CORE.mock(classToMock, mockSettings);
     }
@@ -1918,7 +1978,7 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * However, there are rare cases when partial mocks come handy:
      * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
-     * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+     * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
      * <p>
      * Example:
      *
@@ -1984,11 +2044,10 @@ public class Mockito extends ArgumentMatchers {
      *            to spy on
      * @return a spy of the real object
      */
-    @CheckReturnValue
     public static <T> T spy(T object) {
-        return MOCKITO_CORE.mock((Class<T>) object.getClass(), withSettings()
-                .spiedInstance(object)
-                .defaultAnswer(CALLS_REAL_METHODS));
+        return MOCKITO_CORE.mock(
+                (Class<T>) object.getClass(),
+                withSettings().spiedInstance(object).defaultAnswer(CALLS_REAL_METHODS));
     }
 
     /**
@@ -2018,12 +2077,224 @@ public class Mockito extends ArgumentMatchers {
      * @return a spy of the provided class
      * @since 1.10.12
      */
-    @Incubating
-    @CheckReturnValue
     public static <T> T spy(Class<T> classToSpy) {
-        return MOCKITO_CORE.mock(classToSpy, withSettings()
-                .useConstructor()
-                .defaultAnswer(CALLS_REAL_METHODS));
+        return MOCKITO_CORE.mock(
+                classToSpy, withSettings().useConstructor().defaultAnswer(CALLS_REAL_METHODS));
+    }
+
+    /**
+     * Creates a thread-local mock controller for all static methods of the given class or interface.
+     * The returned object's {@link MockedStatic#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * <b>Note</b>: We recommend against mocking static methods of classes in the standard library or
+     * classes used by custom class loaders used to executed the block with the mocked class. A mock
+     * maker might forbid mocking static methods of know classes that are known to cause problems.
+     * Also, if a static method is a JVM-intrinsic, it cannot typically be mocked even if not
+     * explicitly forbidden.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock class or interface of which static mocks should be mocked.
+     * @return mock controller
+     */
+    public static <T> MockedStatic<T> mockStatic(Class<T> classToMock) {
+        return mockStatic(classToMock, withSettings());
+    }
+
+    /**
+     * Creates a thread-local mock controller for all static methods of the given class or interface.
+     * The returned object's {@link MockedStatic#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * <b>Note</b>: We recommend against mocking static methods of classes in the standard library or
+     * classes used by custom class loaders used to executed the block with the mocked class. A mock
+     * maker might forbid mocking static methods of know classes that are known to cause problems.
+     * Also, if a static method is a JVM-intrinsic, it cannot typically be mocked even if not
+     * explicitly forbidden.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock class or interface of which static mocks should be mocked.
+     * @param defaultAnswer the default answer when invoking static methods.
+     * @return mock controller
+     */
+    public static <T> MockedStatic<T> mockStatic(Class<T> classToMock, Answer defaultAnswer) {
+        return mockStatic(classToMock, withSettings().defaultAnswer(defaultAnswer));
+    }
+
+    /**
+     * Creates a thread-local mock controller for all static methods of the given class or interface.
+     * The returned object's {@link MockedStatic#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * <b>Note</b>: We recommend against mocking static methods of classes in the standard library or
+     * classes used by custom class loaders used to executed the block with the mocked class. A mock
+     * maker might forbid mocking static methods of know classes that are known to cause problems.
+     * Also, if a static method is a JVM-intrinsic, it cannot typically be mocked even if not
+     * explicitly forbidden.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock class or interface of which static mocks should be mocked.
+     * @param name the name of the mock to use in error messages.
+     * @return mock controller
+     */
+    public static <T> MockedStatic<T> mockStatic(Class<T> classToMock, String name) {
+        return mockStatic(classToMock, withSettings().name(name));
+    }
+
+    /**
+     * Creates a thread-local mock controller for all static methods of the given class or interface.
+     * The returned object's {@link MockedStatic#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * <b>Note</b>: We recommend against mocking static methods of classes in the standard library or
+     * classes used by custom class loaders used to executed the block with the mocked class. A mock
+     * maker might forbid mocking static methods of know classes that are known to cause problems.
+     * Also, if a static method is a JVM-intrinsic, it cannot typically be mocked even if not
+     * explicitly forbidden.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock class or interface of which static mocks should be mocked.
+     * @param mockSettings the settings to use where only name and default answer are considered.
+     * @return mock controller
+     */
+    public static <T> MockedStatic<T> mockStatic(Class<T> classToMock, MockSettings mockSettings) {
+        return MOCKITO_CORE.mockStatic(classToMock, mockSettings);
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param defaultAnswer the default answer for the first created mock.
+     * @param additionalAnswers the default answer for all additional mocks. For any access mocks, the
+     *                         last answer is used. If this array is empty, the {@code defaultAnswer} is used.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstructionWithAnswer(
+            Class<T> classToMock, Answer defaultAnswer, Answer... additionalAnswers) {
+        return mockConstruction(
+                classToMock,
+                context -> {
+                    if (context.getCount() == 1 || additionalAnswers.length == 0) {
+                        return withSettings().defaultAnswer(defaultAnswer);
+                    } else if (context.getCount() > additionalAnswers.length) {
+                        return withSettings()
+                                .defaultAnswer(additionalAnswers[additionalAnswers.length - 1]);
+                    } else {
+                        return withSettings()
+                                .defaultAnswer(additionalAnswers[context.getCount() - 2]);
+                    }
+                },
+                (mock, context) -> {});
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(Class<T> classToMock) {
+        return mockConstruction(classToMock, index -> withSettings(), (mock, context) -> {});
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param mockInitializer a callback to prepare a mock's methods after its instantiation.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(
+            Class<T> classToMock, MockedConstruction.MockInitializer<T> mockInitializer) {
+        return mockConstruction(classToMock, withSettings(), mockInitializer);
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param mockSettings the mock settings to use.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(
+            Class<T> classToMock, MockSettings mockSettings) {
+        return mockConstruction(classToMock, context -> mockSettings);
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param mockSettingsFactory the mock settings to use.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(
+            Class<T> classToMock,
+            Function<MockedConstruction.Context, MockSettings> mockSettingsFactory) {
+        return mockConstruction(classToMock, mockSettingsFactory, (mock, context) -> {});
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param mockSettings the settings to use.
+     * @param mockInitializer a callback to prepare a mock's methods after its instantiation.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(
+            Class<T> classToMock,
+            MockSettings mockSettings,
+            MockedConstruction.MockInitializer<T> mockInitializer) {
+        return mockConstruction(classToMock, index -> mockSettings, mockInitializer);
+    }
+
+    /**
+     * Creates a thread-local mock controller for all constructions of the given class.
+     * The returned object's {@link MockedConstruction#close()} method must be called upon completing the
+     * test or the mock will remain active on the current thread.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @param classToMock non-abstract class of which constructions should be mocked.
+     * @param mockSettingsFactory a function to create settings to use.
+     * @param mockInitializer a callback to prepare a mock's methods after its instantiation.
+     * @return mock controller
+     */
+    public static <T> MockedConstruction<T> mockConstruction(
+            Class<T> classToMock,
+            Function<MockedConstruction.Context, MockSettings> mockSettingsFactory,
+            MockedConstruction.MockInitializer<T> mockInitializer) {
+        return MOCKITO_CORE.mockConstruction(classToMock, mockSettingsFactory, mockInitializer);
     }
 
     /**
@@ -2079,7 +2350,6 @@ public class Mockito extends ArgumentMatchers {
      * Let's say you've stubbed <code>foo.bar()</code>.
      * If your code cares what <code>foo.bar()</code> returns then something else breaks(often before even <code>verify()</code> gets executed).
      * If your code doesn't care what <code>get(0)</code> returns then it should not be stubbed.
-     * Not convinced? See <a href="http://monkeyisland.pl/2008/04/26/asking-and-telling">here</a>.
      *
      * <p>
      * See examples in javadoc for {@link Mockito} class
@@ -2087,7 +2357,6 @@ public class Mockito extends ArgumentMatchers {
      * @return OngoingStubbing object used to stub fluently.
      *         <strong>Do not</strong> create a reference to this returned object.
      */
-    @CheckReturnValue
     public static <T> OngoingStubbing<T> when(T methodCall) {
         return MOCKITO_CORE.when(methodCall);
     }
@@ -2110,8 +2379,7 @@ public class Mockito extends ArgumentMatchers {
      * Although it is possible to verify a stubbed invocation, usually <b>it's just redundant</b>.
      * Let's say you've stubbed <code>foo.bar()</code>.
      * If your code cares what <code>foo.bar()</code> returns then something else breaks(often before even <code>verify()</code> gets executed).
-     * If your code doesn't care what <code>get(0)</code> returns then it should not be stubbed.
-     * Not convinced? See <a href="http://monkeyisland.pl/2008/04/26/asking-and-telling">here</a>.
+     * If your code doesn't care what <code>foo.bar()</code> returns then it should not be stubbed.
      *
      * <p>
      * See examples in javadoc for {@link Mockito} class
@@ -2119,7 +2387,6 @@ public class Mockito extends ArgumentMatchers {
      * @param mock to be verified
      * @return mock object itself
      */
-    @CheckReturnValue
     public static <T> T verify(T mock) {
         return MOCKITO_CORE.verify(mock, times(1));
     }
@@ -2146,7 +2413,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return mock object itself
      */
-    @CheckReturnValue
     public static <T> T verify(T mock, VerificationMode mode) {
         return MOCKITO_CORE.verify(mock, mode);
     }
@@ -2157,7 +2423,7 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * Instead of <code>#reset()</code> please consider writing simple, small and focused test methods over lengthy, over-specified tests.
      * <b>First potential code smell is <code>reset()</code> in the middle of the test method.</b> This probably means you're testing too much.
-     * Follow the whisper of your test methods: "Please keep us small & focused on single behavior".
+     * Follow the whisper of your test methods: "Please keep us small and focused on single behavior".
      * There are several threads about it on mockito mailing list.
      * <p>
      * The only reason we added <code>reset()</code> method is to
@@ -2171,14 +2437,25 @@ public class Mockito extends ArgumentMatchers {
      *   mock.add(1);
      *
      *   reset(mock);
-     *   //at this point the mock forgot any interactions & stubbing
+     *   //at this point the mock forgot any interactions and stubbing
      * </code></pre>
      *
      * @param <T> The Type of the mocks
      * @param mocks to be reset
      */
-    public static <T> void reset(T ... mocks) {
+    public static <T> void reset(T... mocks) {
         MOCKITO_CORE.reset(mocks);
+    }
+
+    /**
+     * Clears all mocks, type caches and instrumentations.
+     * <p>
+     * By clearing Mockito's state, previously created mocks might begin to malfunction. This option can be used if
+     * Mockito's caches take up too much space or if the inline mock maker's instrumentation is causing performance
+     * issues in code where mocks are no longer used. Normally, you would not need to use this option.
+     */
+    public static void clearAllCaches() {
+        MOCKITO_CORE.clearAllCaches();
     }
 
     /**
@@ -2192,7 +2469,7 @@ public class Mockito extends ArgumentMatchers {
      * @param <T> The type of the mocks
      * @param mocks The mocks to clear the invocations for
      */
-    public static <T> void clearInvocations(T ... mocks) {
+    public static <T> void clearInvocations(T... mocks) {
         MOCKITO_CORE.clearInvocations(mocks);
     }
 
@@ -2213,8 +2490,7 @@ public class Mockito extends ArgumentMatchers {
      * Some users who did a lot of classic, expect-run-verify mocking tend to use <code>verifyNoMoreInteractions()</code> very often, even in every test method.
      * <code>verifyNoMoreInteractions()</code> is not recommended to use in every test method.
      * <code>verifyNoMoreInteractions()</code> is a handy assertion from the interaction testing toolkit. Use it only when it's relevant.
-     * Abusing it leads to overspecified, less maintainable tests. You can find further reading
-     * <a href="http://monkeyisland.pl/2008/07/12/should-i-worry-about-the-unexpected/">here</a>.
+     * Abusing it leads to overspecified, less maintainable tests.
      * <p>
      * This method will also detect unverified invocations that occurred before the test method,
      * for example: in <code>setUp()</code>, <code>&#064;Before</code> method or in constructor.
@@ -2245,13 +2521,23 @@ public class Mockito extends ArgumentMatchers {
     }
 
     /**
-     * Verifies that no interactions happened on given mocks beyond the previously verified interactions.<br/>
-     * This method has the same behavior as {@link #verifyNoMoreInteractions(Object...)}.
+     * Verifies that no interactions happened on given mocks.
+     * <pre class="code"><code class="java">
+     *   verifyNoInteractions(mockOne, mockTwo);
+     * </code></pre>
+     * This method will also detect invocations
+     * that occurred before the test method, for example: in <code>setUp()</code>, <code>&#064;Before</code> method or in constructor.
+     * Consider writing nice code that makes interactions only in test methods.
+     * <p>
+     * See also {@link Mockito#never()} - it is more explicit and communicates the intent well.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
      *
      * @param mocks to be verified
+     * @since 3.0.1
      */
-    public static void verifyZeroInteractions(Object... mocks) {
-        MOCKITO_CORE.verifyNoMoreInteractions(mocks);
+    public static void verifyNoInteractions(Object... mocks) {
+        MOCKITO_CORE.verifyNoInteractions(mocks);
     }
 
     /**
@@ -2269,7 +2555,6 @@ public class Mockito extends ArgumentMatchers {
      * @param toBeThrown to be thrown when the stubbed method is called
      * @return stubber - to select a method for stubbing
      */
-    @CheckReturnValue
     public static Stubber doThrow(Throwable... toBeThrown) {
         return MOCKITO_CORE.stubber().doThrow(toBeThrown);
     }
@@ -2292,7 +2577,6 @@ public class Mockito extends ArgumentMatchers {
      * @return stubber - to select a method for stubbing
      * @since 2.1.0
      */
-    @CheckReturnValue
     public static Stubber doThrow(Class<? extends Throwable> toBeThrown) {
         return MOCKITO_CORE.stubber().doThrow(toBeThrown);
     }
@@ -2317,13 +2601,13 @@ public class Mockito extends ArgumentMatchers {
      * @return stubber - to select a method for stubbing
      * @since 2.1.0
      */
-    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array creation
-    @SuppressWarnings ({"unchecked", "varargs"})
-    @CheckReturnValue
-    public static Stubber doThrow(Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... toBeThrownNext) {
+    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array
+    // creation
+    @SuppressWarnings({"unchecked", "varargs"})
+    public static Stubber doThrow(
+            Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... toBeThrownNext) {
         return MOCKITO_CORE.stubber().doThrow(toBeThrown, toBeThrownNext);
     }
-
 
     /**
      * Use <code>doCallRealMethod()</code> when you want to call the real implementation of a method.
@@ -2336,7 +2620,7 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * However, there are rare cases when partial mocks come handy:
      * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
-     * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+     * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
      * <p>
      * See also javadoc {@link Mockito#spy(Object)} to find out more about partial mocks.
      * <b>Mockito.spy() is a recommended way of creating partial mocks.</b>
@@ -2356,7 +2640,6 @@ public class Mockito extends ArgumentMatchers {
      * @return stubber - to select a method for stubbing
      * @since 1.9.5
      */
-    @CheckReturnValue
     public static Stubber doCallRealMethod() {
         return MOCKITO_CORE.stubber().doCallRealMethod();
     }
@@ -2383,7 +2666,6 @@ public class Mockito extends ArgumentMatchers {
      * @param answer to answer when the stubbed method is called
      * @return stubber - to select a method for stubbing
      */
-    @CheckReturnValue
     public static Stubber doAnswer(Answer answer) {
         return MOCKITO_CORE.stubber().doAnswer(answer);
     }
@@ -2426,7 +2708,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return stubber - to select a method for stubbing
      */
-    @CheckReturnValue
     public static Stubber doNothing() {
         return MOCKITO_CORE.stubber().doNothing();
     }
@@ -2477,7 +2758,6 @@ public class Mockito extends ArgumentMatchers {
      * @param toBeReturned to be returned when the stubbed method is called
      * @return stubber - to select a method for stubbing
      */
-    @CheckReturnValue
     public static Stubber doReturn(Object toBeReturned) {
         return MOCKITO_CORE.stubber().doReturn(toBeReturned);
     }
@@ -2532,7 +2812,6 @@ public class Mockito extends ArgumentMatchers {
      * @since 2.1.0
      */
     @SuppressWarnings({"unchecked", "varargs"})
-    @CheckReturnValue
     public static Stubber doReturn(Object toBeReturned, Object... toBeReturnedNext) {
         return MOCKITO_CORE.stubber().doReturn(toBeReturned, toBeReturnedNext);
     }
@@ -2554,9 +2833,9 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * <code>InOrder</code> verification is 'greedy', but you will hardly ever notice it.
      * If you want to find out more, read
-     * <a href="https://github.com/mockito/mockito/wiki/Greedy-algorithm-of-verfication-InOrder">this wiki page</a>.
+     * <a href="https://github.com/mockito/mockito/wiki/Greedy-algorithm-of-verification-InOrder">this wiki page</a>.
      * <p>
-     * As of Mockito 1.8.4 you can verifyNoMoreInvocations() in order-sensitive way. Read more: {@link InOrder#verifyNoMoreInteractions()}
+     * As of Mockito 1.8.4 you can verifyNoMoreInteractions() in order-sensitive way. Read more: {@link InOrder#verifyNoMoreInteractions()}
      * <p>
      * See examples in javadoc for {@link Mockito} class
      *
@@ -2564,7 +2843,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return InOrder object to be used to verify in order
      */
-    @CheckReturnValue
     public static InOrder inOrder(Object... mocks) {
         return MOCKITO_CORE.inOrder(mocks);
     }
@@ -2665,7 +2943,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode times(int wantedNumberOfInvocations) {
         return VerificationModeFactory.times(wantedNumberOfInvocations);
     }
@@ -2680,14 +2957,12 @@ public class Mockito extends ArgumentMatchers {
      *
      * <p>
      * If you want to verify there were NO interactions with the mock
-     * check out {@link Mockito#verifyZeroInteractions(Object...)}
-     * or {@link Mockito#verifyNoMoreInteractions(Object...)}
+     * check out {@link Mockito#verifyNoMoreInteractions(Object...)}
      * <p>
      * See examples in javadoc for {@link Mockito} class
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode never() {
         return times(0);
     }
@@ -2703,7 +2978,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode atLeastOnce() {
         return VerificationModeFactory.atLeastOnce();
     }
@@ -2720,9 +2994,23 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode atLeast(int minNumberOfInvocations) {
         return VerificationModeFactory.atLeast(minNumberOfInvocations);
+    }
+
+    /**
+     * Allows at-most-once verification. E.g:
+     * <pre class="code"><code class="java">
+     *   verify(mock, atMostOnce()).someMethod("some arg");
+     * </code></pre>
+     * Alias to <code>atMost(1)</code>.
+     * <p>
+     * See examples in javadoc for {@link Mockito} class
+     *
+     * @return verification mode
+     */
+    public static VerificationMode atMostOnce() {
+        return VerificationModeFactory.atMostOnce();
     }
 
     /**
@@ -2737,7 +3025,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode atMost(int maxNumberOfInvocations) {
         return VerificationModeFactory.atMost(maxNumberOfInvocations);
     }
@@ -2755,9 +3042,8 @@ public class Mockito extends ArgumentMatchers {
      * @param wantedNumberOfInvocations number of invocations to verify
      * @return  verification mode
      */
-    @CheckReturnValue
-    public static VerificationMode calls( int wantedNumberOfInvocations ){
-        return VerificationModeFactory.calls( wantedNumberOfInvocations );
+    public static VerificationMode calls(int wantedNumberOfInvocations) {
+        return VerificationModeFactory.calls(wantedNumberOfInvocations);
     }
 
     /**
@@ -2766,7 +3052,7 @@ public class Mockito extends ArgumentMatchers {
      *   verify(mock, only()).someMethod();
      *   //above is a shorthand for following 2 lines of code:
      *   verify(mock).someMethod();
-     *   verifyNoMoreInvocations(mock);
+     *   verifyNoMoreInteractions(mock);
      * </code></pre>
      *
      * <p>
@@ -2776,20 +3062,18 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return verification mode
      */
-    @CheckReturnValue
     public static VerificationMode only() {
         return VerificationModeFactory.only();
     }
 
     /**
-     * Verification will be triggered after given amount of millis, allowing testing of async code.
+     * Verification will be triggered over and over until the given amount of millis, allowing testing of async code.
      * Useful when interactions with the mock object did not happened yet.
-     * Extensive use of after() method can be a code smell - there are better ways of testing concurrent code.
+     * Extensive use of {@code timeout()} method can be a code smell - there are better ways of testing concurrent code.
      * <p>
      * See also {@link #after(long)} method for testing async code.
      * Differences between {@code timeout()} and {@code after} are explained in Javadoc for {@link #after(long)}.
-     * <p>
-     * Extensive use of {@code timeout()} method can be a code smell - there are better ways of testing concurrent code.
+     *
      * <pre class="code"><code class="java">
      *   //passes when someMethod() is called no later than within 100 ms
      *   //exits immediately when verification is satisfied (e.g. may not wait full 100 ms)
@@ -2810,7 +3094,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return object that allows fluent specification of the verification (times(x), atLeast(y), etc.)
      */
-    @CheckReturnValue
     public static VerificationWithTimeout timeout(long millis) {
         return new Timeout(millis, VerificationModeFactory.times(1));
     }
@@ -2818,7 +3101,7 @@ public class Mockito extends ArgumentMatchers {
     /**
      * Verification will be triggered after given amount of millis, allowing testing of async code.
      * Useful when interactions with the mock object did not happened yet.
-     * Extensive use of after() method can be a code smell - there are better ways of testing concurrent code.
+     * Extensive use of {@code after()} method can be a code smell - there are better ways of testing concurrent code.
      * <p>
      * Not yet implemented to work with InOrder verification.
      * <p>
@@ -2866,7 +3149,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return object that allows fluent specification of the verification
      */
-    @CheckReturnValue
     public static VerificationAfterDelay after(long millis) {
         return new After(millis, VerificationModeFactory.times(1));
     }
@@ -2874,7 +3156,7 @@ public class Mockito extends ArgumentMatchers {
     /**
      * First of all, in case of any trouble, I encourage you to read the Mockito FAQ: <a href="https://github.com/mockito/mockito/wiki/FAQ">https://github.com/mockito/mockito/wiki/FAQ</a>
      * <p>
-     * In case of questions you may also post to mockito mailing list: <a href="http://groups.google.com/group/mockito">http://groups.google.com/group/mockito</a>
+     * In case of questions you may also post to mockito mailing list: <a href="https://groups.google.com/group/mockito">https://groups.google.com/group/mockito</a>
      * <p>
      * <code>validateMockitoUsage()</code> <b>explicitly validates</b> the framework state to detect invalid use of Mockito.
      * However, this feature is optional <b>because Mockito validates the usage all the time...</b> but there is a gotcha so read on.
@@ -2925,12 +3207,12 @@ public class Mockito extends ArgumentMatchers {
      * <p>
      * Don't use it too often.
      * Consider writing simple tests that use simple mocks.
-     * Repeat after me: simple tests push simple, KISSy, readable & maintainable code.
+     * Repeat after me: simple tests push simple, KISSy, readable and maintainable code.
      * If you cannot write a test in a simple way - refactor the code under test.
      * <p>
      * Examples of mock settings:
      * <pre class="code"><code class="java">
-     *   //Creates mock with different default answer & name
+     *   //Creates mock with different default answer and name
      *   Foo mock = mock(Foo.class, withSettings()
      *       .defaultAnswer(RETURNS_SMART_NULLS)
      *       .name("cool mockie"));
@@ -2950,7 +3232,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @return mock settings instance with defaults.
      */
-    @CheckReturnValue
     public static MockSettings withSettings() {
         return new MockSettingsImpl().defaultAnswer(RETURNS_DEFAULTS);
     }
@@ -2964,19 +3245,8 @@ public class Mockito extends ArgumentMatchers {
      * @return verification mode
      * @since 2.1.0
      */
-    @CheckReturnValue
     public static VerificationMode description(String description) {
         return times(1).description(description);
-    }
-
-    /**
-     * @deprecated - please use {@link MockingDetails#printInvocations()} instead.
-     * An instance of {@code MockingDetails} can be retrieved via {@link #mockingDetails(Object)}.
-     */
-    @Deprecated
-    @CheckReturnValue
-    static MockitoDebugger debug() {
-        return new MockitoDebuggerImpl();
     }
 
     /**
@@ -2984,8 +3254,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @since 2.1.0
      */
-    @Incubating
-    @CheckReturnValue
     public static MockitoFramework framework() {
         return new DefaultMockitoFramework();
     }
@@ -2998,8 +3266,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @since 2.7.0
      */
-    @Incubating
-    @CheckReturnValue
     public static MockitoSessionBuilder mockitoSession() {
         return new DefaultMockitoSessionBuilder();
     }
@@ -3067,7 +3333,6 @@ public class Mockito extends ArgumentMatchers {
      *
      * @since 2.20.0
      */
-    @Incubating
     public static LenientStubber lenient() {
         return MOCKITO_CORE.lenient();
     }

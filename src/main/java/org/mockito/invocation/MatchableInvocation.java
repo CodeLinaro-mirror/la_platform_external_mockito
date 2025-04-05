@@ -4,9 +4,9 @@
  */
 package org.mockito.invocation;
 
-import org.mockito.ArgumentMatcher;
-
 import java.util.List;
+
+import org.mockito.ArgumentMatcher;
 
 /**
  * <code>MatchableInvocation</code> wraps {@link Invocation} instance
@@ -14,8 +14,8 @@ import java.util.List;
  * It is used during verification process:
  *
  * <pre class="code"><code class="java">
- *   mock.foo();   // <- invocation
- *   verify(mock).bar();  // <- matchable invocation
+ *   mock.foo();   // &lt;- invocation
+ *   verify(mock).bar();  // &lt;- matchable invocation
  * </code></pre>
  *
  * @since 2.2.12

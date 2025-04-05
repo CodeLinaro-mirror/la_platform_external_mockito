@@ -2,8 +2,16 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockitousage.verification;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -14,9 +22,6 @@ import org.mockito.exceptions.verification.VerificationInOrderFailure;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
-
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
 
 /**
  * ignored since 'relaxed' in order verification is not implemented (too complex to bother, maybe later).
@@ -70,7 +75,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             verifyNoMoreInteractions(mockTwo);
             fail();
-        } catch (NoInteractionsWanted e) {}
+        } catch (NoInteractionsWanted e) {
+        }
     }
 
     @Test
@@ -88,7 +94,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             verifyNoMoreInteractions(mockTwo);
             fail();
-        } catch(NoInteractionsWanted e) {}
+        } catch (NoInteractionsWanted e) {
+        }
     }
 
     @Test
@@ -105,7 +112,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             inOrder.verify(mockThree).simpleMethod(3);
             fail();
-        } catch (VerificationInOrderFailure e) {}
+        } catch (VerificationInOrderFailure e) {
+        }
     }
 
     @Test
@@ -114,12 +122,26 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             verifyNoMoreInteractions(mockTwo);
             fail();
-        } catch (NoInteractionsWanted e) {}
+        } catch (NoInteractionsWanted e) {
+        }
     }
 
-    @Test(expected=VerificationInOrderFailure.class)
+    @Test
     public void shouldFailVerificationOfNonFirstChunk() {
-        inOrder.verify(mockTwo, times(1)).simpleMethod(2);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockTwo, times(1)).simpleMethod(2);
+                        })
+                .isInstanceOf(VerificationInOrderFailure.class)
+                .hasMessageContainingAll(
+                        "Verification in order failure:",
+                        "iMethods.simpleMethod(2);",
+                        "Wanted 1 time:",
+                        "-> at ",
+                        "But was 3 times:",
+                        "-> at ",
+                        "-> at ",
+                        "-> at ");
     }
 
     @Test
@@ -182,9 +204,30 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         inOrder.verify(mockTwo, atLeastOnce()).simpleMethod(2);
     }
 
-    @Test(expected=WantedButNotInvoked.class)
+    @Test
     public void shouldFailOnWrongMethodCalledOnMockTwo() {
-        inOrder.verify(mockTwo, atLeastOnce()).differentMethod();
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockTwo, atLeastOnce()).differentMethod();
+                        })
+                .isInstanceOf(WantedButNotInvoked.class)
+                .hasMessageContainingAll(
+                        "Wanted but not invoked:",
+                        "iMethods.differentMethod();",
+                        "-> at ",
+                        "However, there were exactly 6 interactions with this mock:",
+                        "iMethods.simpleMethod(1);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(3);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(4);",
+                        "-> at ");
     }
 
     @Test
@@ -195,7 +238,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             verify(mockOne, times(0)).simpleMethod(1);
             fail();
-        } catch (NeverWantedButInvoked e) {}
+        } catch (NeverWantedButInvoked e) {
+        }
     }
 
     @Test
@@ -204,12 +248,26 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             inOrder.verify(mockThree, times(0)).simpleMethod(3);
             fail();
-        } catch (VerificationInOrderFailure e) {}
+        } catch (VerificationInOrderFailure e) {
+        }
     }
 
-    @Test(expected=VerificationInOrderFailure.class)
+    @Test
     public void shouldFailWhenMockTwoWantedZeroTimes() {
-        inOrder.verify(mockTwo, times(0)).simpleMethod(2);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockTwo, times(0)).simpleMethod(2);
+                        })
+                .isInstanceOf(VerificationInOrderFailure.class)
+                .hasMessageContainingAll(
+                        "Verification in order failure:",
+                        "iMethods.simpleMethod(2);",
+                        "Wanted 0 times:",
+                        "-> at ",
+                        "But was 3 times:",
+                        "-> at ",
+                        "-> at ",
+                        "-> at ");
     }
 
     @Test
@@ -235,7 +293,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             inOrder.verify(mockTwo, atLeastOnce()).simpleMethod(2);
             fail();
-        } catch (VerificationInOrderFailure e) {}
+        } catch (VerificationInOrderFailure e) {
+        }
     }
 
     @Test
@@ -244,7 +303,8 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             inOrder.verify(mockOne).simpleMethod(1);
             fail();
-        } catch (VerificationInOrderFailure e) {}
+        } catch (VerificationInOrderFailure e) {
+        }
     }
 
     @Test
@@ -253,6 +313,7 @@ public class RelaxedVerificationInOrderTest extends TestBase {
         try {
             inOrder.verify(mockOne).simpleMethod(999);
             fail();
-        } catch (VerificationInOrderFailure e) {}
+        } catch (VerificationInOrderFailure e) {
+        }
     }
 }

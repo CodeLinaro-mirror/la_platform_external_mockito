@@ -4,7 +4,6 @@
  */
 package org.mockito.quality;
 
-import org.mockito.Incubating;
 import org.mockito.MockitoSession;
 import org.mockito.exceptions.misusing.PotentialStubbingProblem;
 import org.mockito.exceptions.misusing.UnnecessaryStubbingException;
@@ -22,7 +21,7 @@ import org.mockito.junit.MockitoRule;
  * <ol>
  *     <li>{@link Strictness#STRICT_STUBS} - ensures clean tests, reduces test code duplication, improves debuggability.
  *       Best combination of flexibility and productivity. Highly recommended.
- *       Planned as default for Mockito v3.
+ *       Planned as default for Mockito v4.
  *       Enable it via {@link MockitoRule}, {@link MockitoJUnitRunner} or {@link MockitoSession}.
  *       See {@link #STRICT_STUBS} for the details.</li>
  *     <li>{@link Strictness#LENIENT} - no added behavior.
@@ -38,7 +37,6 @@ import org.mockito.junit.MockitoRule;
  *
  * @since 2.3.0
  */
-@Incubating
 public enum Strictness {
 
     /**
@@ -49,7 +47,6 @@ public enum Strictness {
      *
      * @since 2.3.0
      */
-    @Incubating
     LENIENT,
 
     /**
@@ -62,14 +59,13 @@ public enum Strictness {
      *
      * @since 2.3.0
      */
-    @Incubating
     WARN,
 
     /**
      * Ensures clean tests, reduces test code duplication, improves debuggability.
      * Offers best combination of flexibility and productivity.
      * Highly recommended.
-     * Planned as default for Mockito v3.
+     * Planned as default for Mockito v4.
      * Enable it via our JUnit support ({@link MockitoJUnit}) or {@link MockitoSession}.
      * <p>
      * Adds following behavior:
@@ -88,6 +84,5 @@ public enum Strictness {
      *
      * @since 2.3.0
      */
-    @Incubating
     STRICT_STUBS;
 }

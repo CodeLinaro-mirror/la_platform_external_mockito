@@ -2,8 +2,15 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockitousage.verification;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -13,45 +20,46 @@ import org.mockito.exceptions.verification.NoInteractionsWanted;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
-
 @SuppressWarnings("unchecked")
 public class VerificationExcludingStubsTest extends TestBase {
 
     @Mock IMethods mock;
 
     @Test
-    public void shouldAllowToExcludeStubsForVerification() throws Exception {
-        //given
+    public void shouldAllowToExcludeStubsForVerification() {
+        // given
         when(mock.simpleMethod()).thenReturn("foo");
 
-        //when
-        String stubbed = mock.simpleMethod(); //irrelevant call because it is stubbing
+        // when
+        String stubbed = mock.simpleMethod(); // irrelevant call because it is stubbing
         mock.objectArgMethod(stubbed);
 
-        //then
+        // then
         verify(mock).objectArgMethod("foo");
 
-        //verifyNoMoreInteractions fails:
-        try { verifyNoMoreInteractions(mock); fail(); } catch (NoInteractionsWanted e) {}
+        // verifyNoMoreInteractions fails:
+        try {
+            verifyNoMoreInteractions(mock);
+            fail();
+        } catch (NoInteractionsWanted e) {
+        }
 
-        //but it works when stubs are ignored:
-        ignoreStubs(mock);
+        // but it works when stubs are ignored:
+        Object[] ignored = ignoreStubs(mock);
         verifyNoMoreInteractions(mock);
     }
 
     @Test
-    public void shouldExcludeFromVerificationInOrder() throws Exception {
-        //given
+    public void shouldExcludeFromVerificationInOrder() {
+        // given
         when(mock.simpleMethod()).thenReturn("foo");
 
-        //when
+        // when
         mock.objectArgMethod("1");
         mock.objectArgMethod("2");
-        mock.simpleMethod(); //calling the stub
+        mock.simpleMethod(); // calling the stub
 
-        //then
+        // then
         InOrder inOrder = inOrder(ignoreStubs(mock));
         inOrder.verify(mock).objectArgMethod("1");
         inOrder.verify(mock).objectArgMethod("2");
@@ -59,14 +67,23 @@ public class VerificationExcludingStubsTest extends TestBase {
         verifyNoMoreInteractions(mock);
     }
 
-    @Test(expected = NotAMockException.class)
-    public void shouldIgnoringStubsDetectNulls() throws Exception {
-        ignoreStubs(mock, null);
+    @Test
+    public void shouldIgnoringStubsDetectNulls() {
+        assertThatThrownBy(
+                        () -> {
+                            Object ignored = ignoreStubs(mock, null);
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is null!");
     }
 
-    @Test(expected = NotAMockException.class)
-    public void shouldIgnoringStubsDetectNonMocks() throws Exception {
-        ignoreStubs(mock, new Object());
+    @Test
+    public void shouldIgnoringStubsDetectNonMocks() {
+        assertThatThrownBy(
+                        () -> {
+                            Object ignored = ignoreStubs(mock, new Object());
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is: class java.lang.Object");
     }
-
 }

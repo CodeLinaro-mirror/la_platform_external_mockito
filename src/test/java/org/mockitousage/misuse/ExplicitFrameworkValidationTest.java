@@ -2,8 +2,12 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockitousage.misuse;
+
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.mockito.Mock;
@@ -13,11 +17,6 @@ import org.mockito.exceptions.misusing.UnfinishedStubbingException;
 import org.mockito.exceptions.misusing.UnfinishedVerificationException;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
-
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class ExplicitFrameworkValidationTest extends TestBase {
 
@@ -30,7 +29,8 @@ public class ExplicitFrameworkValidationTest extends TestBase {
         try {
             Mockito.validateMockitoUsage();
             fail();
-        } catch (UnfinishedVerificationException e) {}
+        } catch (UnfinishedVerificationException e) {
+        }
     }
 
     @SuppressWarnings({"MockitoUsage", "CheckReturnValue"})
@@ -40,15 +40,17 @@ public class ExplicitFrameworkValidationTest extends TestBase {
         try {
             Mockito.validateMockitoUsage();
             fail();
-        } catch (UnfinishedStubbingException e) {}
+        } catch (UnfinishedStubbingException e) {
+        }
     }
 
     @Test
     public void shouldDetectMisplacedArgumentMatcher() {
-        anyObject();
+        Object ignored = any();
         try {
             Mockito.validateMockitoUsage();
             fail();
-        } catch (InvalidUseOfMatchersException e) {}
+        } catch (InvalidUseOfMatchersException e) {
+        }
     }
 }

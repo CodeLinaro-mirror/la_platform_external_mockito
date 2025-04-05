@@ -4,15 +4,16 @@
  */
 package org.mockitousage.bugs;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
-
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 public class NPEWithCertainMatchersTest extends TestBase {
 
@@ -51,17 +52,35 @@ public class NPEWithCertainMatchersTest extends TestBase {
         verify(mock, never()).intArgumentMethod(same(new Integer(100)));
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void shouldNotThrowNPEWhenNullPassedToEq() {
         mock.objectArgMethod("not null");
 
-        verify(mock).objectArgMethod(eq(null));
+        assertThatThrownBy(
+                        () -> {
+                            verify(mock).objectArgMethod(eq(null));
+                        })
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContainingAll(
+                        "Argument(s) are different! Wanted:",
+                        "mock.objectArgMethod(null);",
+                        "Actual invocations have different arguments:",
+                        "mock.objectArgMethod(\"not null\");");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void shouldNotThrowNPEWhenNullPassedToSame() {
         mock.objectArgMethod("not null");
 
-        verify(mock).objectArgMethod(same(null));
+        assertThatThrownBy(
+                        () -> {
+                            verify(mock).objectArgMethod(same(null));
+                        })
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContainingAll(
+                        "Argument(s) are different! Wanted:",
+                        "mock.objectArgMethod(same(null));",
+                        "Actual invocations have different arguments:",
+                        "mock.objectArgMethod(\"not null\");");
     }
 }

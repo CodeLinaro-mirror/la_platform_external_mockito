@@ -4,22 +4,24 @@
  */
 package org.mockitousage.basicapi;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.exceptions.misusing.NotAMockException;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
-
 public class ResetInvocationsTest extends TestBase {
 
-    @Mock
-    IMethods methods;
+    @Mock IMethods methods;
 
-    @Mock
-    IMethods moarMethods;
+    @Mock IMethods moarMethods;
 
     @Test
     public void reset_invocations_should_reset_only_invocations() {
@@ -44,13 +46,23 @@ public class ResetInvocationsTest extends TestBase {
         verifyNoMoreInteractions(methods, moarMethods);
     }
 
-    @Test(expected = NotAMockException.class)
+    @Test
     public void resettingNonMockIsSafe() {
-        clearInvocations("");
+        assertThatThrownBy(
+                        () -> {
+                            clearInvocations("");
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is: class java.lang.String");
     }
 
-    @Test(expected = NotAMockException.class)
+    @Test
     public void resettingNullIsSafe() {
-        clearInvocations(new Object[]{null});
+        assertThatThrownBy(
+                        () -> {
+                            clearInvocations(new Object[] {null});
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is null!");
     }
 }

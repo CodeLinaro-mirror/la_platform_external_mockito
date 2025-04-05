@@ -5,6 +5,7 @@
 package org.mockito.stubbing;
 
 import org.mockito.Mockito;
+import org.mockito.NotExtensible;
 
 /**
  * Simply put: "<b>When</b> the x method is called <b>then</b> return y". E.g:
@@ -31,6 +32,7 @@ import org.mockito.Mockito;
  *
  * See examples in javadoc for {@link Mockito#when}
  */
+@NotExtensible
 public interface OngoingStubbing<T> {
 
     /**
@@ -62,8 +64,9 @@ public interface OngoingStubbing<T> {
      *
      * @return object that allows stubbing consecutive calls
      */
-    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array creation warnings (on call site)
-    @SuppressWarnings ({"unchecked", "varargs"})
+    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array
+    // creation warnings (on call site)
+    @SuppressWarnings({"unchecked", "varargs"})
     OngoingStubbing<T> thenReturn(T value, T... values);
 
     /**
@@ -144,9 +147,11 @@ public interface OngoingStubbing<T> {
      * @return object that allows stubbing consecutive calls
      * @since 2.1.0
      */
-    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array creation warnings (on call site)
-    @SuppressWarnings ({"unchecked", "varargs"})
-    OngoingStubbing<T> thenThrow(Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... nextToBeThrown);
+    // Additional method helps users of JDK7+ to hide heap pollution / unchecked generics array
+    // creation warnings (on call site)
+    @SuppressWarnings({"unchecked", "varargs"})
+    OngoingStubbing<T> thenThrow(
+            Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... nextToBeThrown);
 
     /**
      * Sets the real implementation to be called when the method is called on a mock object.
@@ -159,7 +164,7 @@ public interface OngoingStubbing<T> {
      * <p>
      * However, there are rare cases when partial mocks come handy:
      * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
-     * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+     * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
      * <pre class="code"><code class="java">
      *   // someMethod() must be safe (e.g. doesn't throw, doesn't have dependencies to the object state, etc.)
      *   // if it isn't safe then you will have trouble stubbing it using this api. Use Mockito.doCallRealMethod() instead.
@@ -221,7 +226,7 @@ public interface OngoingStubbing<T> {
      * <p>
      * It allows to create a stub in one line of code.
      * This can be helpful to keep test code clean.
-     * For example, some boring stub can be created & stubbed at field initialization in a test:
+     * For example, some boring stub can be created and stubbed at field initialization in a test:
      * <pre class="code"><code class="java">
      * public class CarTest {
      *   Car boringStubbedCar = when(mock(Car.class).shiftGear()).thenThrow(EngineNotStarted.class).getMock();
@@ -234,5 +239,4 @@ public interface OngoingStubbing<T> {
      * @since 1.9.0
      */
     <M> M getMock();
-
 }

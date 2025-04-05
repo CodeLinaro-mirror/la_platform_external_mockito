@@ -2,22 +2,30 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockitousage.verification;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.exceptions.base.MockitoException;
+import org.mockito.exceptions.misusing.NotAMockException;
+import org.mockito.exceptions.misusing.NullInsteadOfMockException;
 import org.mockito.exceptions.verification.NoInteractionsWanted;
 import org.mockito.exceptions.verification.VerificationInOrderFailure;
 import org.mockito.exceptions.verification.WantedButNotInvoked;
-import org.mockito.exceptions.verification.junit.ArgumentsAreDifferent;
+import org.mockito.exceptions.verification.opentest4j.ArgumentsAreDifferent;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
-
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
 
 public class BasicVerificationInOrderTest extends TestBase {
 
@@ -99,14 +107,36 @@ public class BasicVerificationInOrderTest extends TestBase {
         }
     }
 
-    @Test(expected = VerificationInOrderFailure.class)
+    @Test
     public void shouldFailOnFirstMethodBecauseOneInvocationWanted() {
-        inOrder.verify(mockOne, times(0)).simpleMethod(1);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockOne, times(0)).simpleMethod(1);
+                        })
+                .isInstanceOf(VerificationInOrderFailure.class)
+                .hasMessageContainingAll(
+                        "Verification in order failure:",
+                        "iMethods.simpleMethod(1);",
+                        "Wanted 0 times:",
+                        "-> at ",
+                        "But was 1 time:",
+                        "-> at ");
     }
 
-    @Test(expected = VerificationInOrderFailure.class)
+    @Test
     public void shouldFailOnFirstMethodBecauseOneInvocationWantedAgain() {
-        inOrder.verify(mockOne, times(2)).simpleMethod(1);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockOne, times(2)).simpleMethod(1);
+                        })
+                .isInstanceOf(VerificationInOrderFailure.class)
+                .hasMessageContainingAll(
+                        "Verification in order failure:",
+                        "iMethods.simpleMethod(1);",
+                        "Wanted 2 times:",
+                        "-> at ",
+                        "But was 1 time:",
+                        "-> at ");
     }
 
     @Test
@@ -157,14 +187,56 @@ public class BasicVerificationInOrderTest extends TestBase {
 
     /* ------------- */
 
-    @Test(expected = ArgumentsAreDifferent.class)
+    @Test
     public void shouldFailOnFirstMethodBecauseDifferentArgsWanted() {
-        inOrder.verify(mockOne).simpleMethod(100);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockOne).simpleMethod(100);
+                        })
+                .isInstanceOf(ArgumentsAreDifferent.class)
+                .hasMessageContainingAll(
+                        "Argument(s) are different! Wanted:",
+                        "iMethods.simpleMethod(100);",
+                        "-> at ",
+                        "Actual invocations have different arguments:",
+                        "iMethods.simpleMethod(1);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(3);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(4);",
+                        "-> at ");
     }
 
-    @Test(expected = WantedButNotInvoked.class)
+    @Test
     public void shouldFailOnFirstMethodBecauseDifferentMethodWanted() {
-        inOrder.verify(mockOne).oneArg(true);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder.verify(mockOne).oneArg(true);
+                        })
+                .isInstanceOf(WantedButNotInvoked.class)
+                .hasMessageContainingAll(
+                        "Wanted but not invoked:",
+                        "iMethods.oneArg(true);",
+                        "-> at ",
+                        "However, there were exactly 6 interactions with this mock:",
+                        "iMethods.simpleMethod(1);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(3);",
+                        "-> at ",
+                        "iMethods.simpleMethod(2);",
+                        "-> at ",
+                        "iMethods.simpleMethod(4);",
+                        "-> at ");
     }
 
     @Test
@@ -259,14 +331,62 @@ public class BasicVerificationInOrderTest extends TestBase {
         }
     }
 
-    @Test(expected = NoInteractionsWanted.class)
-    public void shouldFailOnVerifyZeroInteractions() {
-        verifyZeroInteractions(mockOne);
+    @Test
+    public void shouldFailOnVerifyNoInteractions() {
+        assertThatThrownBy(
+                        () -> {
+                            verifyNoInteractions(mockOne);
+                        })
+                .isInstanceOf(NoInteractionsWanted.class)
+                .hasMessageContainingAll(
+                        "No interactions wanted here:",
+                        "-> at ",
+                        "But found these interactions on mock 'iMethods':",
+                        "-> at ",
+                        "-> at ",
+                        "***",
+                        "For your reference, here is the list of all invocations ([?] - means unverified).",
+                        "1. [?]-> at ",
+                        "2. [?]-> at ");
     }
 
     @SuppressWarnings({"all", "CheckReturnValue", "MockitoUsage"})
-    @Test(expected = MockitoException.class)
+    @Test
     public void shouldScreamWhenNullPassed() {
-        inOrder((Object[])null);
+        assertThatThrownBy(
+                        () -> {
+                            inOrder((Object[]) null);
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessageContainingAll(
+                        "Method requires argument(s)!",
+                        "Pass mocks that require verification in order.",
+                        "For example:",
+                        "    InOrder inOrder = inOrder(mockOne, mockTwo);");
+    }
+
+    @Test
+    public void shouldThrowNullPassedToVerifyException() {
+        try {
+            inOrder.verify(null);
+            fail();
+        } catch (NullInsteadOfMockException e) {
+            assertThat(e)
+                    .hasMessageContaining(
+                            "Argument passed to verify() should be a mock but is null!");
+        }
+    }
+
+    @Test
+    public void shouldThrowNotAMockPassedToVerifyException() {
+        Object object = new Object();
+        try {
+            inOrder.verify(object);
+            fail();
+        } catch (NotAMockException e) {
+            assertThat(e)
+                    .hasMessageContaining(
+                            "Argument passed to verify() is of type Object and is not a mock!");
+        }
     }
 }

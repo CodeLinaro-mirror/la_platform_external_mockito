@@ -5,6 +5,8 @@
 package org.mockito.internal.stubbing.answers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.internal.stubbing.answers.DoesNothing.doesNothing;
 import static org.mockitoutil.TestBase.getLastInvocation;
@@ -15,7 +17,7 @@ import org.mockito.exceptions.base.MockitoException;
 import org.mockito.invocation.Invocation;
 import org.mockitousage.IMethods;
 
-public class DoesNothingTest   {
+public class DoesNothingTest {
 
     private IMethods mock;
     private Invocation invocation_Void;
@@ -23,7 +25,7 @@ public class DoesNothingTest   {
     private Invocation invocation_String;
 
     @Before
-    public void init(){
+    public void init() {
         mock = mock(IMethods.class);
 
         mock.voidMethod();
@@ -37,26 +39,43 @@ public class DoesNothingTest   {
     }
 
     @Test
-    public void answer_returnsNull() throws Throwable {
+    public void answer_returnsNull() {
         assertThat(doesNothing().answer(invocation_Void)).isNull();
         assertThat(doesNothing().answer(invocation_void)).isNull();
         assertThat(doesNothing().answer(invocation_String)).isNull();
     }
 
-    @Test(expected = MockitoException.class)
-    public void validateFor_nonVoidReturnType_shouldFail()   {
-        doesNothing().validateFor(invocation_String);
+    @Test
+    public void validateFor_nonVoidReturnType_shouldFail() {
+        assertThatThrownBy(
+                        () -> {
+                            doesNothing().validateFor(invocation_String);
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessageContaining("Only void methods can doNothing()!");
     }
 
     @Test
-    public void validateFor_voidReturnType_shouldPass()   {
+    public void validateFor_voidReturnType_shouldPass() {
         doesNothing().validateFor(invocation_void);
     }
 
     @Test
-    public void validateFor_voidObjectReturnType() throws Throwable {
+    public void validateFor_voidObjectReturnType() {
         doesNothing().validateFor(invocation_Void);
     }
 
+    @Test
+    public void answer_returns_null_for_generic_parameter() {
+        SubclassWithGenericParameter mock = mock(SubclassWithGenericParameter.class);
+        doNothing().when(mock).methodReturningT();
+    }
 
+    static class SuperClassWithGenericParameter<T> {
+        T methodReturningT() {
+            return null;
+        }
+    }
+
+    static class SubclassWithGenericParameter extends SuperClassWithGenericParameter<Void> {}
 }

@@ -4,16 +4,16 @@
  */
 package org.mockito.internal.verification;
 
+import static org.mockito.internal.exceptions.Reporter.cannotVerifyToString;
+import static org.mockito.internal.util.ObjectMethodsGuru.isToStringMethod;
+
+import java.util.List;
+
 import org.mockito.internal.invocation.InvocationMatcher;
 import org.mockito.internal.stubbing.InvocationContainerImpl;
 import org.mockito.internal.verification.api.VerificationData;
 import org.mockito.invocation.Invocation;
 import org.mockito.invocation.MatchableInvocation;
-
-import java.util.List;
-
-import static org.mockito.internal.exceptions.Reporter.cannotVerifyToString;
-import static org.mockito.internal.util.ObjectMethodsGuru.isToStringMethod;
 
 public class VerificationDataImpl implements VerificationData {
 
@@ -33,11 +33,6 @@ public class VerificationDataImpl implements VerificationData {
 
     @Override
     public MatchableInvocation getTarget() {
-        return wanted;
-    }
-
-    @Override
-    public InvocationMatcher getWanted() {
         return wanted;
     }
 

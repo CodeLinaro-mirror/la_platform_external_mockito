@@ -4,20 +4,24 @@
  */
 package org.mockito.internal.util.reflection;
 
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.exceptions.base.MockitoException;
-import org.mockito.internal.util.reflection.FieldInitializer.ConstructorArgumentResolver;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-import static org.junit.Assert.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-
-
+import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.exceptions.base.MockitoException;
+import org.mockito.internal.util.reflection.FieldInitializer.ConstructorArgumentResolver;
 
 public class FieldInitializerTest {
 
@@ -31,13 +35,14 @@ public class FieldInitializerTest {
     private Interface interfaceType;
     private InnerClassType innerClassType;
     private AbstractStaticClass instantiatedAbstractType = new ConcreteStaticClass();
-    private Interface instantiatedInterfaceType =  new ConcreteStaticClass();
+    private Interface instantiatedInterfaceType = new ConcreteStaticClass();
     private InnerClassType instantiatedInnerClassType = new InnerClassType();
 
     @Test
     public void should_keep_same_instance_if_field_initialized() throws Exception {
         final StaticClass backupInstance = alreadyInstantiated;
-        FieldInitializer fieldInitializer = new FieldInitializer(this, field("alreadyInstantiated"));
+        FieldInitializer fieldInitializer =
+                new FieldInitializer(this, field("alreadyInstantiated"));
         FieldInitializationReport report = fieldInitializer.initialize();
 
         assertSame(backupInstance, report.fieldInstance());
@@ -67,7 +72,8 @@ public class FieldInitializerTest {
 
     @Test
     public void should_instantiate_field_with_private_default_constructor() throws Exception {
-        FieldInitializer fieldInitializer = new FieldInitializer(this, field("privateDefaultConstructor"));
+        FieldInitializer fieldInitializer =
+                new FieldInitializer(this, field("privateDefaultConstructor"));
         FieldInitializationReport report = fieldInitializer.initialize();
 
         assertNotNull(report.fieldInstance());
@@ -75,15 +81,25 @@ public class FieldInitializerTest {
         assertFalse(report.fieldWasInitializedUsingContructorArgs());
     }
 
-    @Test(expected = MockitoException.class)
+    @Test
     public void should_fail_to_instantiate_field_if_no_default_constructor() throws Exception {
-        FieldInitializer fieldInitializer = new FieldInitializer(this, field("noDefaultConstructor"));
-        fieldInitializer.initialize();
+        FieldInitializer fieldInitializer =
+                new FieldInitializer(this, field("noDefaultConstructor"));
+
+        assertThatThrownBy(
+                        () -> {
+                            fieldInitializer.initialize();
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessage(
+                        "the type 'StaticClassWithoutDefaultConstructor' has no default constructor");
     }
 
     @Test
-    public void should_fail_to_instantiate_field_if_default_constructor_throws_exception() throws Exception {
-        FieldInitializer fieldInitializer = new FieldInitializer(this, field("throwingExDefaultConstructor"));
+    public void should_fail_to_instantiate_field_if_default_constructor_throws_exception()
+            throws Exception {
+        FieldInitializer fieldInitializer =
+                new FieldInitializer(this, field("throwingExDefaultConstructor"));
         try {
             fieldInitializer.initialize();
             fail();
@@ -94,9 +110,14 @@ public class FieldInitializerTest {
         }
     }
 
-    @Test(expected = MockitoException.class)
-    public void should_fail_for_abstract_field() throws Exception {
-        new FieldInitializer(this, field("abstractType"));
+    @Test
+    public void should_fail_for_abstract_field() {
+        assertThatThrownBy(
+                        () -> {
+                            new FieldInitializer(this, field("abstractType"));
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessage("the type 'AbstractStaticClass' is an abstract class.");
     }
 
     @Test
@@ -104,9 +125,14 @@ public class FieldInitializerTest {
         new FieldInitializer(this, field("instantiatedAbstractType"));
     }
 
-    @Test(expected = MockitoException.class)
-    public void should_fail_for_interface_field() throws Exception {
-        new FieldInitializer(this, field("interfaceType"));
+    @Test
+    public void should_fail_for_interface_field() {
+        assertThatThrownBy(
+                        () -> {
+                            new FieldInitializer(this, field("interfaceType"));
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessage("the type 'Interface' is an interface.");
     }
 
     @Test
@@ -114,10 +140,10 @@ public class FieldInitializerTest {
         new FieldInitializer(this, field("instantiatedInterfaceType"));
     }
 
-    @Test(expected = MockitoException.class)
-    public void should_fail_for_local_type_field() throws Exception {
-        // when
-        class LocalType { }
+    @Test
+    public void should_fail_for_local_type_field() {
+        // given
+        class LocalType {}
 
         class TheTestWithLocalType {
             @InjectMocks LocalType field;
@@ -125,14 +151,21 @@ public class FieldInitializerTest {
 
         TheTestWithLocalType testWithLocalType = new TheTestWithLocalType();
 
-        // when
-        new FieldInitializer(testWithLocalType, testWithLocalType.getClass().getDeclaredField("field"));
+        // when / then
+        assertThatThrownBy(
+                        () -> {
+                            new FieldInitializer(
+                                    testWithLocalType,
+                                    testWithLocalType.getClass().getDeclaredField("field"));
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessage("the type 'LocalType' is a local class.");
     }
 
     @Test
     public void should_not_fail_if_local_type_field_is_instantiated() throws Exception {
         // when
-        class LocalType { }
+        class LocalType {}
 
         class TheTestWithLocalType {
             @InjectMocks LocalType field = new LocalType();
@@ -141,12 +174,18 @@ public class FieldInitializerTest {
         TheTestWithLocalType testWithLocalType = new TheTestWithLocalType();
 
         // when
-        new FieldInitializer(testWithLocalType, testWithLocalType.getClass().getDeclaredField("field"));
+        new FieldInitializer(
+                testWithLocalType, testWithLocalType.getClass().getDeclaredField("field"));
     }
 
-    @Test(expected = MockitoException.class)
-    public void should_fail_for_inner_class_field() throws Exception {
-        new FieldInitializer(this, field("innerClassType"));
+    @Test
+    public void should_fail_for_inner_class_field() {
+        assertThatThrownBy(
+                        () -> {
+                            new FieldInitializer(this, field("innerClassType"));
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessage("the type 'InnerClassType' is an inner non static class.");
     }
 
     @Test
@@ -156,8 +195,12 @@ public class FieldInitializerTest {
 
     @Test
     public void can_instantiate_class_with_parameterized_constructor() throws Exception {
-        ConstructorArgumentResolver resolver = given(mock(ConstructorArgumentResolver.class).resolveTypeInstances(any(Class.class)))
-                        .willReturn(new Object[]{null}).getMock();
+        ConstructorArgumentResolver resolver =
+                given(
+                                mock(ConstructorArgumentResolver.class)
+                                        .resolveTypeInstances(any(Class.class)))
+                        .willReturn(new Object[] {null})
+                        .getMock();
 
         new FieldInitializer(this, field("noDefaultConstructor"), resolver).initialize();
 
@@ -168,40 +211,35 @@ public class FieldInitializerTest {
         return this.getClass().getDeclaredField(fieldName);
     }
 
-    static class StaticClass {
-    }
+    static class StaticClass {}
 
     static class StaticClassWithDefaultConstructor {
-        StaticClassWithDefaultConstructor() { }
+        StaticClassWithDefaultConstructor() {}
     }
 
     static class StaticClassWithPrivateDefaultConstructor {
-        private StaticClassWithPrivateDefaultConstructor() { }
+        private StaticClassWithPrivateDefaultConstructor() {}
     }
 
     static class StaticClassWithoutDefaultConstructor {
-        private StaticClassWithoutDefaultConstructor(String param) { }
+        private StaticClassWithoutDefaultConstructor(String param) {}
     }
 
     static class StaticClassThrowingExceptionDefaultConstructor {
-        StaticClassThrowingExceptionDefaultConstructor() throws Exception {
+        StaticClassThrowingExceptionDefaultConstructor() {
             throw new NullPointerException("business logic failed");
         }
     }
 
-    static abstract class AbstractStaticClass {
+    abstract static class AbstractStaticClass {
         public AbstractStaticClass() {}
     }
 
-    interface Interface {
+    interface Interface {}
 
-    }
-
-    static class ConcreteStaticClass extends AbstractStaticClass implements Interface {
-    }
+    static class ConcreteStaticClass extends AbstractStaticClass implements Interface {}
 
     class InnerClassType {
-        InnerClassType() { }
+        InnerClassType() {}
     }
-
 }

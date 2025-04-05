@@ -2,10 +2,8 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockito.stubbing;
 
-import org.mockito.Incubating;
 import org.mockito.invocation.InvocationOnMock;
 
 /**
@@ -40,7 +38,7 @@ import org.mockito.invocation.InvocationOnMock;
  *
  * <pre class="code"><code class="java">
  * when(mock.someMethod(anyString(), anyInt())).then(doSomethingTricky()); // fail at answer execution time
- * when(mock.incompatibleMethod(anyVararg())).then(doSomethingTricky()); // fail at answer execution time
+ * when(mock.incompatibleMethod(any())).then(doSomethingTricky()); // fail at answer execution time
  * </code></pre>
  * </p>
  *
@@ -49,7 +47,7 @@ import org.mockito.invocation.InvocationOnMock;
  * validable at <em>stub time</em> by implementing this contract.
  *
  * <pre class="code"><code class="java">
- * when(mock.incompatibleMethod(anyVararg())).then(doSomethingTricky()); // fail at answer stub time
+ * when(mock.incompatibleMethod(any())).then(doSomethingTricky()); // fail at answer stub time
  *
  * static Answer doSomethingTricky() {
  *     return new TrickyAnswer();
@@ -69,7 +67,6 @@ import org.mockito.invocation.InvocationOnMock;
  *
  * @since 2.3.8
  */
-@Incubating
 public interface ValidableAnswer {
 
     /**
@@ -89,5 +86,4 @@ public interface ValidableAnswer {
      * @since 2.3.8
      */
     void validateFor(InvocationOnMock invocation);
-
 }

@@ -2,22 +2,27 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-
 package org.mockitousage.verification;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.exceptions.base.MockitoException;
 import org.mockito.exceptions.verification.NoInteractionsWanted;
 import org.mockitoutil.TestBase;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.fail;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class NoMoreInteractionsVerificationTest extends TestBase {
@@ -30,7 +35,7 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
     }
 
     @Test
-    public void shouldStubbingNotRegisterRedundantInteractions() throws Exception {
+    public void shouldStubbingNotRegisterRedundantInteractions() {
         when(mock.add("one")).thenReturn(true);
         when(mock.add("two")).thenReturn(true);
 
@@ -41,7 +46,7 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
     }
 
     @Test
-    public void shouldVerifyWhenWantedNumberOfInvocationsUsed() throws Exception {
+    public void shouldVerifyWhenWantedNumberOfInvocationsUsed() {
         mock.add("one");
         mock.add("one");
         mock.add("one");
@@ -52,36 +57,29 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
     }
 
     @Test
-    public void shouldVerifyNoInteractionsAsManyTimesAsYouWant() throws Exception {
-        verifyNoMoreInteractions(mock);
-        verifyNoMoreInteractions(mock);
-
-        verifyZeroInteractions(mock);
-        verifyZeroInteractions(mock);
-    }
-
-    @Test
-    public void shouldFailZeroInteractionsVerification() throws Exception {
-        mock.clear();
-
-        try {
-            verifyZeroInteractions(mock);
-            fail();
-        } catch (NoInteractionsWanted e) {}
-    }
-
-    @Test
-    public void shouldFailNoMoreInteractionsVerification() throws Exception {
+    public void shouldFailNoMoreInteractionsVerification() {
         mock.clear();
 
         try {
             verifyNoMoreInteractions(mock);
             fail();
-        } catch (NoInteractionsWanted e) {}
+        } catch (NoInteractionsWanted e) {
+        }
     }
 
     @Test
-    public void shouldPrintAllInvocationsWhenVerifyingNoMoreInvocations() throws Exception {
+    public void shouldFailNoInteractionsVerification() {
+        mock.clear();
+
+        try {
+            verifyNoInteractions(mock);
+            fail();
+        } catch (NoInteractionsWanted e) {
+        }
+    }
+
+    @Test
+    public void shouldPrintAllInvocationsWhenVerifyingNoMoreInvocations() {
         mock.add(1);
         mock.add(2);
         mock.clear();
@@ -96,7 +94,7 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
     }
 
     @Test
-    public void shouldNotContainAllInvocationsWhenSingleUnwantedFound() throws Exception {
+    public void shouldNotContainAllInvocationsWhenSingleUnwantedFound() {
         mock.add(1);
 
         try {
@@ -108,7 +106,7 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
     }
 
     @Test
-    public void shouldVerifyOneMockButFailOnOther() throws Exception {
+    public void shouldVerifyOneMockButFailOnOther() {
         List<String> list = mock(List.class);
         Map<String, Integer> map = mock(Map.class);
 
@@ -121,14 +119,44 @@ public class NoMoreInteractionsVerificationTest extends TestBase {
 
         verifyNoMoreInteractions(list);
         try {
-            verifyZeroInteractions(map);
+            verifyNoInteractions(map);
             fail();
-        } catch (NoInteractionsWanted e) {}
+        } catch (NoInteractionsWanted e) {
+        }
     }
 
-    @SuppressWarnings("all")
-    @Test(expected=MockitoException.class)
-    public void verifyNoMoreInteractionsShouldScreamWhenNullPassed() throws Exception {
-        verifyNoMoreInteractions((Object[])null);
+    @Test
+    public void shouldVerifyOneMockButFailOnOtherVerifyNoInteractions() {
+        List<String> list = mock(List.class);
+        Map<String, Integer> map = mock(Map.class);
+
+        list.add("one");
+        list.add("one");
+
+        map.put("one", 1);
+
+        verify(list, times(2)).add("one");
+
+        verifyNoMoreInteractions(list);
+        try {
+            verifyNoInteractions(map);
+            fail();
+        } catch (NoInteractionsWanted e) {
+        }
+    }
+
+    // @SuppressWarnings("all")
+    @Test
+    public void verifyNoMoreInteractionsShouldScreamWhenNullPassed() {
+        assertThatThrownBy(
+                        () -> {
+                            verifyNoMoreInteractions((Object[]) null);
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessageContainingAll(
+                        "Method requires argument(s)!",
+                        "Pass mocks that should be verified, e.g:",
+                        "    verifyNoMoreInteractions(mockOne, mockTwo);",
+                        "    verifyNoInteractions(mockOne, mockTwo);");
     }
 }

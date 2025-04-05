@@ -4,6 +4,11 @@
  */
 package org.mockitousage.basicapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.exceptions.misusing.MissingMethodInvocationException;
@@ -12,17 +17,11 @@ import org.mockito.exceptions.misusing.UnfinishedVerificationException;
 import org.mockitousage.IMethods;
 import org.mockitoutil.TestBase;
 
-import static org.junit.Assert.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-
 public class ResetTest extends TestBase {
 
-    @Mock
-    private IMethods mock;
+    @Mock private IMethods mock;
 
-    @Mock
-    private IMethods mockTwo;
+    @Mock private IMethods mockTwo;
 
     @Test
     public void shouldResetOngoingStubbingSoThatMoreMeaningfulExceptionsAreRaised() {
@@ -35,34 +34,52 @@ public class ResetTest extends TestBase {
         }
     }
 
-    @Test(expected = NotAMockException.class)
+    @Test
     public void resettingNonMockIsSafe() {
-        reset("");
-    }
-
-    @Test(expected = NotAMockException.class)
-    public void resettingNullIsSafe() {
-        reset(new Object[]{null});
+        assertThatThrownBy(
+                        () -> {
+                            reset("");
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is: class java.lang.String");
     }
 
     @Test
-    public void shouldRemoveAllStubbing() throws Exception {
+    public void resettingNullIsSafe() {
+        assertThatThrownBy(
+                        () -> {
+                            reset(new Object[] {null});
+                        })
+                .isInstanceOf(NotAMockException.class)
+                .hasMessage("Argument should be a mock, but is null!");
+    }
+
+    @Test
+    public void shouldRemoveAllStubbing() {
         when(mock.objectReturningMethod(isA(Integer.class))).thenReturn(100);
         when(mock.objectReturningMethod(200)).thenReturn(200);
         reset(mock);
         assertNull(mock.objectReturningMethod(200));
-        assertEquals("default behavior should return null", null, mock.objectReturningMethod("blah"));
+        assertEquals(
+                "default behavior should return null", null, mock.objectReturningMethod("blah"));
     }
 
     @Test
-    public void shouldRemoveAllInteractions() throws Exception {
+    public void shouldRemoveAllInteractions() {
         mock.simpleMethod(1);
         reset(mock);
-        verifyZeroInteractions(mock);
+        verifyNoInteractions(mock);
     }
 
     @Test
-    public void shouldRemoveStubbingToString() throws Exception {
+    public void shouldRemoveAllInteractionsVerifyNoInteractions() {
+        mock.simpleMethod(1);
+        reset(mock);
+        verifyNoInteractions(mock);
+    }
+
+    @Test
+    public void shouldRemoveStubbingToString() {
         IMethods mockTwo = mock(IMethods.class);
         when(mockTwo.toString()).thenReturn("test");
         reset(mockTwo);
@@ -70,11 +87,11 @@ public class ResetTest extends TestBase {
     }
 
     @Test
-    public void shouldStubbingNotBeTreatedAsInteraction() {
+    public void shouldStubbingNotBeTreatedAsInteractionVerifyNoInteractions() {
         when(mock.simpleMethod("one")).thenThrow(new RuntimeException());
         doThrow(new RuntimeException()).when(mock).simpleMethod("two");
         reset(mock);
-        verifyZeroInteractions(mock);
+        verifyNoInteractions(mock);
     }
 
     @Test
@@ -97,7 +114,7 @@ public class ResetTest extends TestBase {
     @SuppressWarnings({"MockitoUsage", "CheckReturnValue"})
     @Test
     public void shouldValidateStateWhenResetting() {
-        //invalid verify:
+        // invalid verify:
         verify(mock);
 
         try {
@@ -109,11 +126,11 @@ public class ResetTest extends TestBase {
 
     @Test
     public void shouldMaintainPreviousDefaultAnswer() {
-        //given
+        // given
         mock = mock(IMethods.class, RETURNS_MOCKS);
-        //when
+        // when
         reset(mock);
-        //then
+        // then
         assertNotNull(mock.iMethodsReturningMethod());
     }
 }

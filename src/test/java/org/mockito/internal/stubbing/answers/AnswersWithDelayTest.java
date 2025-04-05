@@ -4,29 +4,53 @@
  */
 package org.mockito.internal.stubbing.answers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
+
+import java.util.Date;
+
 import org.junit.Test;
 import org.mockito.exceptions.base.MockitoException;
 import org.mockito.internal.invocation.InvocationBuilder;
 
-import java.util.Date;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-
 public class AnswersWithDelayTest {
     @Test
     public void should_return_value() throws Throwable {
-        assertThat(new AnswersWithDelay(1, new Returns("value")).answer(new InvocationBuilder().method("oneArg").arg("A").toInvocation())).isEqualTo("value");
-    }
-
-    @Test(expected = MockitoException.class)
-    public void should_fail_when_contained_answer_should_fail() throws Throwable {
-        new AnswersWithDelay(1, new Returns("one")).validateFor(new InvocationBuilder().method("voidMethod").toInvocation());
+        assertThat(
+                        new AnswersWithDelay(1, new Returns("value"))
+                                .answer(
+                                        new InvocationBuilder()
+                                                .method("oneArg")
+                                                .arg("A")
+                                                .toInvocation()))
+                .isEqualTo("value");
     }
 
     @Test
-    public void should_succeed_when_contained_answer_should_succeed() throws Throwable {
-        new AnswersWithDelay(1, new Returns("one")).validateFor(new InvocationBuilder().simpleMethod().toInvocation());
+    public void should_fail_when_contained_answer_should_fail() {
+        assertThatThrownBy(
+                        () -> {
+                            new AnswersWithDelay(1, new Returns("one"))
+                                    .validateFor(
+                                            new InvocationBuilder()
+                                                    .method("voidMethod")
+                                                    .toInvocation());
+                        })
+                .isInstanceOf(MockitoException.class)
+                .hasMessageContainingAll(
+                        "'voidMethod' is a *void method* and it *cannot* be stubbed with a *return value*!",
+                        "Voids are usually stubbed with Throwables:",
+                        "    doThrow(exception).when(mock).someVoidMethod();",
+                        "If you need to set the void method to do nothing you can use:",
+                        "    doNothing().when(mock).someVoidMethod();",
+                        "For more information, check out the javadocs for Mockito.doNothing().");
+    }
+
+    @Test
+    public void should_succeed_when_contained_answer_should_succeed() {
+        new AnswersWithDelay(1, new Returns("one"))
+                .validateFor(new InvocationBuilder().simpleMethod().toInvocation());
     }
 
     @Test
@@ -43,4 +67,3 @@ public class AnswersWithDelayTest {
         assertThat(timePassed).isCloseTo(sleepyTime, within(15L));
     }
 }
-

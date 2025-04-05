@@ -4,6 +4,9 @@
  */
 
 /**
- * JUnit integration to provide better support for junit runners in IDEs.
+ * JUnit integration to provide better support for JUnit 4 and
+ * earlier in IDEs.
+ *
+ * See also org.mockito.exceptions.verification.opentest4j
  */
 package org.mockito.exceptions.verification.junit;

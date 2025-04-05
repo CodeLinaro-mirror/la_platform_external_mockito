@@ -4,30 +4,31 @@
  */
 package org.mockito;
 
+import java.io.Serializable;
+
 import org.mockito.exceptions.misusing.PotentialStubbingProblem;
 import org.mockito.exceptions.misusing.UnnecessaryStubbingException;
 import org.mockito.invocation.InvocationFactory;
 import org.mockito.invocation.MockHandler;
 import org.mockito.listeners.InvocationListener;
+import org.mockito.listeners.StubbingLookupListener;
 import org.mockito.listeners.VerificationStartedListener;
 import org.mockito.mock.MockCreationSettings;
 import org.mockito.mock.SerializableMode;
 import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
-import java.io.Serializable;
-
 /**
  * Allows mock creation with additional mock settings.
  * <p/>
  * Don't use it too often.
  * Consider writing simple tests that use simple mocks.
- * Repeat after me: simple tests push simple, KISSy, readable & maintainable code.
+ * Repeat after me: simple tests push simple, KISSy, readable and maintainable code.
  * If you cannot write a test in a simple way - refactor the code under test.
  * <p/>
  * Examples of mock settings:
  * <pre class="code"><code class="java">
- *   //Creates mock with different default answer & name
+ *   //Creates mock with different default answer and name
  *   Foo mock = mock(Foo.class, withSettings()
  *                                .defaultAnswer(RETURNS_SMART_NULLS)
  *                                .name("cool mockie")
@@ -43,14 +44,15 @@ import java.io.Serializable;
  * Firstly, to make it easy to add another mock setting when the demand comes.
  * Secondly, to enable combining together different mock settings without introducing zillions of overloaded mock() methods.
  */
+@NotExtensible
 public interface MockSettings extends Serializable {
 
     /**
      * Specifies extra interfaces the mock should implement. Might be useful for legacy code or some corner cases.
      * <p>
      * This mysterious feature should be used very occasionally.
-     * The object under test should know exactly its collaborators & dependencies.
-     * If you happen to use it often than please make sure you are really producing simple, clean & readable code.
+     * The object under test should know exactly its collaborators and dependencies.
+     * If you happen to use it often than please make sure you are really producing simple, clean and readable code.
      * <p>
      * Examples:
      * <pre class="code"><code class="java">
@@ -99,7 +101,7 @@ public interface MockSettings extends Serializable {
      * <p>
      * However, there are rare cases when partial mocks come handy:
      * dealing with code you cannot change easily (3rd party interfaces, interim refactoring of legacy code etc.)
-     * However, I wouldn't use partial mocks for new, test-driven & well-designed code.
+     * However, I wouldn't use partial mocks for new, test-driven and well-designed code.
      * <p>
      * Enough warnings about partial mocks, see an example how spiedInstance() works:
      * <pre class="code"><code class="java">
@@ -204,6 +206,24 @@ public interface MockSettings extends Serializable {
     MockSettings verboseLogging();
 
     /**
+     * Add stubbing lookup listener to the mock object.
+     *
+     * Multiple listeners may be added and they will be notified orderly.
+     *
+     * For use cases and more info see {@link StubbingLookupListener}.
+     *
+     * Example:
+     * <pre class="code"><code class="java">
+     *  List mockWithListener = mock(List.class, withSettings().stubbingLookupListeners(new YourStubbingLookupListener()));
+     * </code></pre>
+     *
+     * @param listeners The stubbing lookup listeners to add. May not be null.
+     * @return settings instance so that you can fluently specify other settings
+     * @since 2.24.6
+     */
+    MockSettings stubbingLookupListeners(StubbingLookupListener... listeners);
+
+    /**
      * Registers a listener for method invocations on this mock. The listener is
      * notified every time a method on this mock is called.
      * <p>
@@ -235,7 +255,6 @@ public interface MockSettings extends Serializable {
      * @return settings instance so that you can fluently specify other settings
      * @since 2.11.0
      */
-    @Incubating
     MockSettings verificationStartedListeners(VerificationStartedListener... listeners);
 
     /**
@@ -276,7 +295,6 @@ public interface MockSettings extends Serializable {
      * @return settings instance so that you can fluently specify other settings
      * @since 2.7.14 (useConstructor with no arguments was supported since 1.10.12)
      */
-    @Incubating
     MockSettings useConstructor(Object... args);
 
     /**
@@ -291,7 +309,6 @@ public interface MockSettings extends Serializable {
      * @return settings instance so that you can fluently specify other settings
      * @since 1.10.12
      */
-    @Incubating
     MockSettings outerInstance(Object outerClassInstance);
 
     /**
@@ -302,7 +319,6 @@ public interface MockSettings extends Serializable {
      * @return settings instance so that you can fluently specify other settings
      * @since 1.10.13
      */
-    @Incubating
     MockSettings withoutAnnotations();
 
     /**
@@ -317,8 +333,21 @@ public interface MockSettings extends Serializable {
      * @return immutable view of mock settings
      * @since 2.10.0
      */
-    @Incubating
     <T> MockCreationSettings<T> build(Class<T> typeToMock);
+
+    /**
+     * Creates immutable view of mock settings used later by Mockito, for use within a static mocking.
+     * Framework integrators can use this method to create instances of creation settings
+     * and use them in advanced use cases, for example to create invocations with {@link InvocationFactory},
+     * or to implement custom {@link MockHandler}.
+     * Since {@link MockCreationSettings} is {@link NotExtensible}, Mockito public API needs a creation method for this type.
+     *
+     * @param classToMock class to mock
+     * @param <T> type to mock
+     * @return immutable view of mock settings
+     * @since 2.10.0
+     */
+    <T> MockCreationSettings<T> buildStatic(Class<T> classToMock);
 
     /**
      * Lenient mocks bypass "strict stubbing" validation (see {@link Strictness#STRICT_STUBS}).
@@ -331,6 +360,5 @@ public interface MockSettings extends Serializable {
      *
      * For more information and an elaborate example, see {@link Mockito#lenient()}.
      */
-    @Incubating
     MockSettings lenient();
 }
